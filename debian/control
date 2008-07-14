@@ -1,0 +1,26 @@
+Source: micro-evtd
+Section: utils
+Priority: optional
+Maintainer: Per Andersson <avtobiff@gmail.com>
+Build-Depends: debhelper (>= 6), quilt (>= 0.46)
+Standards-Version: 3.8.0
+Homepage: http://buffalo.nas-central.org/download/Users/lb_worm/micro_evtd/micro_evtd/
+
+Package: micro-evtd
+Architecture: arm armel
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Daemon for Linkstation/Kuro micro controller
+ Micro-evtd is a simple and small user space interface to the
+ Linkstation/Kuro micro controller which is fitted to the ARM series of NAS
+ devices. Micro-evtd is able to control and monitor fans, various LEDs,
+ system temperature and two buttons. Users can also specify timed events
+ for setting the device in standby and when to wake up again.
+
+Package: micro-evtd-udeb
+Architecture: arm armel
+Section: debian-installer
+Depends: ${shlibs:Depends}, ${misc:Depends}
+XC-Package-Type: udeb
+Description: Daemon for Linkstation/Kuro micro controller
+ Allows to change status LEDs, control fan speed or play tunes on
+ supported devices.

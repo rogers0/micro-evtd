@@ -1,0 +1,39 @@
+Index: micro-evtd-3.3.0/micro_evtd.c
+===================================================================
+--- micro-evtd-3.3.0.orig/micro_evtd.c	2008-06-23 03:51:23.000000000 +0200
++++ micro-evtd-3.3.0/micro_evtd.c	2008-06-23 03:51:42.000000000 +0200
+@@ -93,7 +93,7 @@
+ // Some global variables
+ const char strVersion[]="Micro-monitor daemon Version";
+ const char micro_device[]="/dev/ttyS1";
+-const char micro_default[]="/etc/default/micro_evtd";
++const char micro_conf[]="/etc/micro_evtd/micro_evtd.conf";
+ const char micro_lock[]="/var/lock/micro_evtd";
+ TIMER* poffTimer=NULL;
+ TIMER* ponTimer=NULL;
+@@ -1037,14 +1037,14 @@
+ 	int file;
+ 	int i;
+ 
+-	errno = stat(micro_default, &filestatus);
++	errno = stat(micro_conf, &filestatus);
+ 	
+ 	/* If exists? */
+ 	if (0 == errno) {
+ 
+ 		// Has this file changed?
+ 		if (filestatus.st_mtime != tt_LastMicroAcess || iForce) {
+-			file = open(micro_default, O_RDONLY);
++			file = open(micro_conf, O_RDONLY);
+ 
+ 			if (file >= 0) {
+ 				iRead = read(file, &buff, 4095);
+@@ -1099,7 +1099,7 @@
+ 	argv++;
+ 
+ 	// Generate unique key.  This will fail with stock so let it be.
+-	if ((mutex = ftok(micro_default, 'M')) == (key_t) -1) {
++	if ((mutex = ftok(micro_conf, 'M')) == (key_t) -1) {
+ 	    printf("IPCS: Error, falling back to 'flock'\n");
+ 		mutex = 0;
+ 	}

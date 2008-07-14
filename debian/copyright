@@ -1,0 +1,16 @@
+Format-Specification: http://wiki.debian.org/Proposals/CopyrightFormat
+Upstream-Name: micro_evtd
+Upstream-Maintainer: Bob Perry <lb-source@users.sourceforge.net>
+Upstream-Source: http://buffalo.nas-central.org/download/Users/lb_worm/micro_evtd/micro_evtd/
+
+Files: *
+Copyright: Copyright 2008, Bob Perry <lb-source@users.sourceforge.net>
+License: GPL-2+
+ On Debian systems the full text of the GNU General Public License can be found
+ in the `/usr/share/common-licenses/GPL' file.
+
+Files: debian/*
+Copyright: Copyright 2008, Per Andersson <avtobiff@gmail.com>
+License: GPL-2+
+ On Debian systems the full text of the GNU General Public License can be found
+ in the `/usr/share/common-licenses/GPL' file.

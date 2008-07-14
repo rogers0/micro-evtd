@@ -1,0 +1,44 @@
+Index: micro-evtd-3.3.3/micro_evtd.c
+===================================================================
+--- micro-evtd-3.3.3.orig/micro_evtd.c	2008-07-09 10:53:52.000000000 +0200
++++ micro-evtd-3.3.3/micro_evtd.c	2008-07-09 10:53:53.000000000 +0200
+@@ -403,8 +403,8 @@
+ 	char strEventScript[50];
+ 	
+ 	// Create the command line
+-	sprintf(strEventScript, "/%s/micro_evtd/EventScript %c %d %ld %s %s %d %c", 
+-	(CP_SCRIPT ==  cmd? "etc" : strTmpPath), 
++	sprintf(strEventScript, "/%s/micro_evtd.event %c %d %ld %s %s %d %c",
++	(CP_SCRIPT ==  cmd? "usr/sbin" : strTmpPath),
+ 	cmd, 
+ 	cmd2, 
+ 	cmd3,
+Index: micro-evtd-3.3.3/Install/EventScript
+===================================================================
+--- micro-evtd-3.3.3.orig/Install/EventScript	2008-07-09 10:47:03.000000000 +0200
++++ micro-evtd-3.3.3/Install/EventScript	2008-07-09 10:54:48.000000000 +0200
+@@ -51,7 +51,7 @@
+ create_script() {
+ 	## Create RAM version of control file
+ 	if [ ! -d $TMP/micro_evtd ]; then mkdir $TMP/micro_evtd ; fi
+-	cp -a /etc/micro_evtd/EventScript $TMP/micro_evtd/.
++	cp -a /usr/sbin/micro_evtd.event $TMP/micro_evtd/.
+ 	## Stop flashing LEDs and clear error codes
+ 	micro_evtd -q -s 02520000,02540000
+ }
+@@ -103,9 +103,13 @@
+ 	      1)  stop ;;
+ 	      2)  ;;
+ 	      4)  ;;
+-	      8)  /usr/local/bin/initsw.sh ;;
+-	      16) /usr/local/bin/ups_shutdown.sh ;;
++## These files don't exist in a Debian installation
++#	      8)  /usr/local/bin/initsw.sh ;;
++#	      16) /usr/local/bin/ups_shutdown.sh ;;
++	      8)  ;;
++	      16) ;;
+ 	      65) ## Long power button press
++## Is hddrootmode for EM?
+ 	          rm -f /boot/hddrootmode
+ 	          reboot ;;
+ 	      *)  ;;

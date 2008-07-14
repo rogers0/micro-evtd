@@ -1,0 +1,143 @@
+.TH micro_evtd 1 Jun 2008
+
+.SH NAME
+
+micro_evtd - Linkstation/Kuro Micro Event Daemon
+
+.SH SYNOPSIS
+
+micro_evtd [
+.B -s
+.IR string1,string2,..
+] [
+.B -c
+] [
+.B -v
+] [
+.B -q
+]
+.RS 1
+[
+.B -p
+.IR priority
+] [
+.B -w
+.IR seconds
+] [
+.B -e
+]
+.SH DESCRIPTION
+
+.IR micro_evtd
+is a simple and small user space interface to the Linkstation/Kuro Micro
+controller which is fitted to the ARM series of NAS boxes.  It doesn't
+have a lot of features and its main task is to provide 'keep-alive'
+messages to the on-board Micro.  This device controls/monitors the fan,
+various LEDs, system temperature and two buttons.  This daemon provides
+the necessary initialisation to the device and also monitors and controls
+the fan depending on current temperature readings.  It also monitors a
+power button (located at the front) and a reset button (located at the rear).
+.LP
+A new feature of this daemon is the ability to code standby events for single
+or groups of days.  This allows the user to add any number of standby-on/off
+events as required.  You can send a SIGHUP to the daemon to get it to report
+the time remaining before entering standby.  Five minutes before standby, a
+message is reported to all users.  A user can delay standby by five minutes
+by sending a SIGCONT to the daemon.  Each successive SIGCONT adds another
+five minutes.  Alternatively, a SIGINT will log a standby skip.  When the
+timed event is reached, it will skip it for the next event.
+
+.SH OPTIONS
+
+.TP 5
+
+.B -s
+.IR string1,string2,..
+Specifies a comma seperated hexadecimal command sequence which will be
+transmitted to the Micro.
+
+.TP 5
+
+.B -c
+Don't fork, i.e. run in the foreground (debug use only).
+
+.TP 5
+
+.B -v
+Displays the current daemon version information.
+
+.TP 5
+
+.B -q
+Quiet mode for the display of results from use of the command sequence.
+This option will prevent the display of returned results from the micro.
+
+.TP 5
+
+.TP 5
+
+.B -p
+.IR priority
+This allows the priority of the process to be changed.  This defaults to -4.
+
+.B -w
+.IR seconds
+This is used by the standby process.  The time specified is in seconds.  This is
+the time for which the unit will wait until issuing a wake up event.
+
+.TP 5
+
+.B -e
+This is used by the standby process.  The daemon will wait until an event occurs
+to awaken the box.
+
+.SH BUTTON OPERATION
+
+All events, whether mechanical button operation, or software reset/shutdown
+actions are routed through micro_evtd.event(1).
+
+.TP 5
+
+.IR POWER
+On press, a button event message is sent.
+
+.TP 5
+
+.IR RESET
+On press, a button event message is sent.
+
+
+.SH FILES
+
+/etc/micro_evtd.conf
+
+    Configuration file for micro_evtd.
+
+/usr/sbin/micro_evtd.event
+
+    Event script that acts like a front end to micro_evtd.
+
+.SH SEE ALSO
+
+microapl(1), micro_evtd.conf(1), micro_evtd.event(1)
+
+.SH AUTHOR
+
+Bob Perry <lb-source@users.sourceforge.net>
+
+.SH COPYRIGHT
+
+This program is free software; you can redistribute it and/or modify 
+it under the terms of the GNU General Public License as published 
+by the Free Software Foundation; either version 2 of the License, 
+or (at your option) any later version.
+.LP
+This program is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+GNU General Public License for more details.
+.LP
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+

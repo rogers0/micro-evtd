@@ -1,0 +1,80 @@
+#!/usr/bin/make -f
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+PACKAGES = $(shell dh_listpackages -s)
+UDEB_DIRS	= lib/debian-installer-startup.d \
+			  usr/lib/base-installer.d \
+			  usr/lib/finish-install.d
+
+include /usr/share/quilt/quilt.make
+
+configure: configure-stamp
+configure-stamp:
+	dh_testdir
+	touch configure-stamp
+
+build: build-stamp
+
+build-stamp: configure-stamp $(QUILT_STAMPFN)
+	dh_testdir
+	$(MAKE)
+	touch $@
+
+clean: unpatch
+	dh_testdir
+	dh_testroot
+	rm -f build-stamp configure-stamp
+	$(MAKE) clean
+	dh_clean
+
+get-orig-source:
+	./get-orig-source.sh
+
+install: build
+	dh_testdir
+	dh_testroot
+	dh_clean -k
+	dh_installdirs
+	dh_install
+
+	# Install following files "manually" as they need a rename
+	$(foreach PACKAGE, $(PACKAGES), \
+		install Install/EventScript \
+			debian/$(PACKAGE)/usr/sbin/micro_evtd.event; )
+	$(foreach PACKAGE, $(PACKAGES), \
+		install -m0644 Install/micro_evtd.sample \
+			debian/$(PACKAGE)/etc/micro_evtd/micro_evtd.conf; )
+	# Install following files "manually" as they need permissions set
+	install -m0755 debian/udeb/micro_evtd.command \
+		debian/micro-evtd-udeb/usr/sbin/
+	$(foreach UDEB_DIR, $(UDEB_DIRS), \
+		install -m0755 debian/udeb/$$(basename $(UDEB_DIR))/* \
+			debian/micro-evtd-udeb/$(UDEB_DIR); )
+
+# Build architecture-independent files here.
+binary-indep: build install
+# We have nothing to do by default.
+
+# Build architecture-dependent files here.
+binary-arch: build install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs Changelog
+	dh_installdocs README
+	dh_install
+	dh_installinit
+	dh_installman
+	dh_link
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_shlibdeps
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+binary: binary-indep binary-arch
+.PHONY: build clean binary-indep binary-arch binary install configure

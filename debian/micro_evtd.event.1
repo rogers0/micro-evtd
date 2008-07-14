@@ -1,0 +1,94 @@
+.TH micro_evtd.event 1 Jun 2008
+
+.SH NAME
+
+micro_evtd.event - Event script for micro_evtd
+
+.SH SYNOPSIS
+
+micro_evtd.event [
+.B OPTION
+]
+
+.SH DESCRIPTION
+
+The event script works as a front end for micro_evtd.
+
+.SH MESSAGE EVENTS
+
+The event system has been modified such that 99% of the daemon event system is pushed through the event script.
+A third parameter is supplied by the daemon out to the script detailing information relevant to the generated
+message.
+
+.TP 5
+
+.IR 4
+
+Fan failure
+
+.TP 5
+
+.IR C
+
+Copy to RAMDISK.
+
+.TP 5
+
+.IR O
+
+Overheat
+
+.TP 5
+
+.IR I
+
+Updates
+.B my_status
+with temperature and fan speed information.
+
+.TP 5
+
+.IR B
+
+Button press information.
+
+.TP 5
+
+.IR W
+
+Message event.
+
+.TP 5
+
+.IR S
+
+Standby event.
+
+.IR T
+
+If enabled, display time remaining before entering low power mode.
+
+.SH SEE ALSO
+
+microapl(1), micro_evtd(1), micro_evtd.conf(1)
+
+.SH AUTHOR
+
+Bob Perry <lb-source@users.sourceforge.net>
+
+.SH COPYRIGHT
+
+This program is free software; you can redistribute it and/or modify 
+it under the terms of the GNU General Public License as published 
+by the Free Software Foundation; either version 2 of the License, 
+or (at your option) any later version.
+.LP
+This program is distributed in the hope that it will be useful, 
+but WITHOUT ANY WARRANTY; without even the implied warranty of 
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
+GNU General Public License for more details.
+.LP
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+

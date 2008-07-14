@@ -1,0 +1,5 @@
+etc/micro_evtd
+lib/debian-installer-startup.d
+usr/lib/base-installer.d
+usr/lib/finish-install.d
+usr/sbin

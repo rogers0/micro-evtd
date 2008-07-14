@@ -1,0 +1,52 @@
+micro-evtd (3.3.3-6) unstable; urgency=low
+
+  * Installed scripts and hooks manually in debian/rules so that diff.gz
+    can represent the correct permissions. Thanks Frans Pop for helping.
+  * Added hook to base-installer.d in udeb to install micro-evtd if the
+    device is supported.
+
+ -- Per Andersson <avtobiff@gmail.com>  Mon, 14 Jul 2008 16:53:11 +0200
+
+micro-evtd (3.3.3-5) unstable; urgency=low
+
+  * Changed mode for hook scripts in udeb to be executable.
+  * Tidied the code in micro_evtd.command in udeb.
+
+ -- Per Andersson <avtobiff@gmail.com>  Mon, 14 Jul 2008 14:51:08 +0200
+
+micro-evtd (3.3.3-4) unstable; urgency=low
+
+  * Moved microapl to /usr/sbin as documented.
+  * Added daemon, scripts and conf file to udeb, doh!
+  * Removed unnecessary stuff from micro_evtd.command, used in udeb.
+
+ -- Per Andersson <avtobiff@gmail.com>  Sun, 13 Jul 2008 21:34:06 +0200
+
+micro-evtd (3.3.3-3) unstable; urgency=low
+
+  * Fixed that a hook-script resided in /lib/ in udeb.
+  * Added dependency to libc-udeb for udeb.
+  * Added content to udeb, untested.
+  * Added man page for microapl.
+  * Fixed typo in man page micro_evtd.1.
+
+ -- Per Andersson <avtobiff@gmail.com>  Sun, 13 Jul 2008 11:47:17 +0200
+
+micro-evtd (3.3.3-2) unstable; urgency=low
+
+  * Moved microapl from /etc/micro_evtd to /usr/sbin.
+
+ -- Per Andersson <avtobiff@gmail.com>  Thu, 10 Jul 2008 14:28:57 +0200
+
+micro-evtd (3.3.3-1) unstable; urgency=low
+
+  * Initial release (Closes: #484104)
+  * My first Debian package!
+  * Created a Makefile to suit packaging. Thanks Ryan Tandy who had
+    valuable comments on this and helped testing in general.
+  * Patched daemon to write a pidfile.
+  * Moved around files to suit packaging, check README.Debian.
+  * Patched unnecessary casting in daemon.
+  * Created udeb, need to add content.
+
+ -- Per Andersson <avtobiff@gmail.com>  Fri, 27 Jun 2008 22:21:35 +0200

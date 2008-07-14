@@ -1,0 +1,57 @@
+Makes micro_evtd daemon output a pidfile.
+
+Index: micro-evtd-3.3.0/micro_evtd.c
+===================================================================
+--- micro-evtd-3.3.0.orig/micro_evtd.c	2008-06-23 01:14:41.000000000 +0200
++++ micro-evtd-3.3.0/micro_evtd.c	2008-06-23 03:16:13.000000000 +0200
+@@ -80,6 +80,8 @@
+ #define TWENTYFOURHR        TWELVEHR*2
+ #define FIVE_MINUTES		5*60
+ 
++#define PIDFILE				"/var/run/micro_evtd.pid"
++
+ /* Macro event object definition */
+ typedef struct _OFF_TIMER
+ {
+@@ -1066,6 +1068,21 @@
+ 	}
+ }
+ 
++void pidfile(void)
++{
++	FILE *fp;
++
++	fp = fopen(PIDFILE,"w");
++	if (!fp) {
++		perror("pidfile/open");
++		return;
++	}
++
++	fprintf(fp,"%u\n",getpid());
++
++	fclose(fp);
++}
++
+ int main(int argc, char *argv[])
+ {
+ 	int iLen;
+@@ -1192,6 +1209,9 @@
+ 	/* make child session leader */
+ 	setsid();
+ 
++	/* write pid to file */
++	pidfile();
++
+ 	/* clear file creation mask */
+ 	umask(0);
+ 
+@@ -1207,6 +1227,9 @@
+ 	// Go do our thing
+ 	micro_evtd_main();
+ 
++	/* remove pid file */
++	unlink(PIDFILE);
++
+ 	return 0;
+ }
+ 

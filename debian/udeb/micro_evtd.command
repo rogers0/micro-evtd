@@ -36,7 +36,7 @@ play_tune() {
 # Test if device is supported
 machine=`sed -n '/Hardware/ {s/^Hardware\s*:\s//;p}' /proc/cpuinfo`
 case $machine in
-	"Buffalo/Revogear Kurobox Pro")
+	"Buffalo Linkstation Pro/Live" | "Buffalo/Revogear Kurobox Pro")
 	# Success or continue
 	[ "$1" == "-t" ] && exit 0 || true ;;
 	*)

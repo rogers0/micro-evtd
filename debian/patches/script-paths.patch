@@ -1,0 +1,59 @@
+Index: micro-evtd-3.3.3/Install/EventScript
+===================================================================
+--- micro-evtd-3.3.3.orig/Install/EventScript	2008-07-31 14:54:55.000000000 +0200
++++ micro-evtd-3.3.3/Install/EventScript	2008-07-31 14:55:50.000000000 +0200
+@@ -15,7 +15,7 @@
+ # NOTE:
+ # shutdown calls will operate on stock system but will ignore parameters
+ 
+-PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin
++PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin:/usr/sbin
+ 
+ if [ "$1" = "C" ]; then
+   TMP=$4
+@@ -28,7 +28,7 @@
+ ## Ensure tmp path is valid
+ LEN=${#TMP}-1
+ if [ $'\r' = "${TMP:${LEN}:1}" ]; then TMP=${TMP:0:$LEN} ; fi
+-if [ ! -d ${TMP} ]; then TMP=/tmp ; fi
++if [ ! -d ${TMP} ]; then TMP=/tmp/micro_evtd ; fi
+ 
+ if [ "$DEBUG" ] && [ -d "$LOG" ]; then
+   if [ "$DEBUG" -gt 0 ]; then
+@@ -50,8 +50,8 @@
+ 
+ create_script() {
+ 	## Create RAM version of control file
+-	if [ ! -d $TMP/micro_evtd ]; then mkdir $TMP/micro_evtd ; fi
+-	cp -a /usr/sbin/micro_evtd.event $TMP/micro_evtd/.
++	if [ ! -d $TMP ]; then mkdir $TMP ; fi
++	cp -a /usr/sbin/micro_evtd.event $TMP/.
+ 	## Stop flashing LEDs and clear error codes
+ 	micro_evtd -q -s 02520000,02540000
+ }
+Index: micro-evtd-3.3.3/Install/micro_evtd.sample
+===================================================================
+--- micro-evtd-3.3.3.orig/Install/micro_evtd.sample	2008-07-31 14:54:10.000000000 +0200
++++ micro-evtd-3.3.3/Install/micro_evtd.sample	2008-07-31 14:54:19.000000000 +0200
+@@ -1,7 +1,7 @@
+ # /etc/micro_evtd/micro_evtd.conf: Configuration file for micro_evtd
+ 
+ # Directory that temporary files should be created in.
+-# TMP=/tmp
++# TMP=/tmp/micro_evtd
+ 
+ # Directory that the log file should be created in.
+ # LOG=/var/log
+Index: micro-evtd-3.3.3/micro_evtd.c
+===================================================================
+--- micro-evtd-3.3.3.orig/micro_evtd.c	2008-07-31 14:54:23.000000000 +0200
++++ micro-evtd-3.3.3/micro_evtd.c	2008-07-31 14:54:49.000000000 +0200
+@@ -109,7 +109,7 @@
+ char i_Use_Trend=1;
+ char log_path[20]="/var/log";
+ int iDebugLevel=1;
+-char strTmpPath[20]="/tmp";
++char strTmpPath[20]="/tmp/micro_evtd";
+ int i_FileDescriptor = 0;
+ int i_Poll = 0;
+ int mutexId=0;

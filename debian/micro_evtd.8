@@ -1,4 +1,6 @@
-.TH micro_evtd 1 Jun 2008
+.\" Copyright © 2008 Per Andersson <avtobiff@gmail.com>
+.\" This man page is covered by the GNU General Public License (GPLv2 or higher).
+.TH micro_evtd 8 "July 2008" "Debian Project" ""
 
 .SH NAME
 
@@ -94,7 +96,7 @@ to awaken the box.
 .SH BUTTON OPERATION
 
 All events, whether mechanical button operation, or software reset/shutdown
-actions are routed through micro_evtd.event(1).
+actions are routed through micro_evtd.event(8).
 
 .TP 5
 
@@ -109,7 +111,7 @@ On press, a button event message is sent.
 
 .SH FILES
 
-/etc/micro_evtd.conf
+/etc/micro_evtd/micro_evtd.conf
 
     Configuration file for micro_evtd.
 
@@ -119,25 +121,8 @@ On press, a button event message is sent.
 
 .SH SEE ALSO
 
-microapl(1), micro_evtd.conf(1), micro_evtd.event(1)
+microapl(8), micro_evtd.conf(5), micro_evtd.event(8)
 
 .SH AUTHOR
 
 Bob Perry <lb-source@users.sourceforge.net>
-
-.SH COPYRIGHT
-
-This program is free software; you can redistribute it and/or modify 
-it under the terms of the GNU General Public License as published 
-by the Free Software Foundation; either version 2 of the License, 
-or (at your option) any later version.
-.LP
-This program is distributed in the hope that it will be useful, 
-but WITHOUT ANY WARRANTY; without even the implied warranty of 
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the 
-GNU General Public License for more details.
-.LP
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-

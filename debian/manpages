@@ -1,4 +1,4 @@
-debian/micro_evtd.1
-debian/micro_evtd.conf.1
-debian/micro_evtd.event.1
-debian/microapl.1
+debian/micro_evtd.8
+debian/micro_evtd.conf.5
+debian/micro_evtd.event.8
+debian/microapl.8

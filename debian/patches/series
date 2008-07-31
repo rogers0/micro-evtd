@@ -2,3 +2,5 @@ pidfile.patch
 casting.patch
 conffile.patch
 eventscript.patch
+micro_evtd-default-conf.patch
+script-paths.patch

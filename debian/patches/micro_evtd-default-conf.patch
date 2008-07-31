@@ -1,0 +1,57 @@
+diff -Naur micro-evtd-3.3.3.orig/Install/micro_evtd.sample micro-evtd-3.3.3/Install/micro_evtd.sample
+--- micro-evtd-3.3.3.orig/Install/micro_evtd.sample	2008-06-24 10:23:20.000000000 -0700
++++ micro-evtd-3.3.3/Install/micro_evtd.sample	2008-07-28 11:44:09.000000000 -0700
+@@ -1,25 +1,29 @@
+-# Tmp/ram disk location
+-TMP=/tmp
+-# Debug log file location
+-LOG=/var/log
+-# Advanced use only.  Will log events when enabled
++# /etc/micro_evtd/micro_evtd.conf: Configuration file for micro_evtd
++
++# Directory that temporary files should be created in.
++# TMP=/tmp
++
++# Directory that the log file should be created in.
++# LOG=/var/log
++
++# Set to 1 to enable additional messages in the log file.
+ # DEBUG=0
+-# Default on, set to off to disable fan control
+-MONITOR=ON
+-# Default 40 seconds, daemon monitor/refresh state
+-REFRESH=40
+-# Default 30 seconds, fan stationary timer
+-FANSTOP=30
+-# Default 35 45 50 60, temperature/fan controls
+-# 35 - slow, normal running ~33 C-deg
+-# 45 - fast
+-# 50 - full
+-# 60 - Too hot alarm, overheat
+-TEMP-RANGE=32 38 42 60
+-# Default no, set to YES to use average sampled temp to
+-# give a smoother control of fan speed
+-TREND=YES
+-# Default 2, specify fan/temp control hysteresis 1-5
+-HYSTERESIS=2
+-# Low power (standby) timer control
+-SUN-SAT=ON=08:00,OFF>05:00
++
++# Set to ON or OFF to enable or disable controlling the fan speed.
++# MONITOR=ON
++
++# Interval (in seconds) between refreshes of the daemon's state.
++# REFRESH=40
++
++# How long the fan can stay stopped for before an error is raised.
++# FANSTOP=30
++
++# Temperature ranges used for fan speed changes, in degrees C.  If 
++# the temperature goes over the final value an error is raised.
++# TEMP-RANGE=35 45 50 60
++
++# Whether to use temperature history sampling to give smoother changes.
++# TREND=YES
++
++# How many previous temperature states will be used for history sampling.
++# HYSTERESIS=2

@@ -1,3 +1,19 @@
+micro-evtd (3.3.3-6+lenny1) unstable; urgency=low
+
+  * Added Buffalo Linkstation Pro/Live to the udeb test (micro_evtd.command).
+  * Included patch from Ryan Tandy to annotate the default config with
+    comments (see micro_evtd-default-conf.patch).
+  * Patched strTmpPath (micro_evtd.c) from "/tmp" to "/tmp/micro_evtd" and
+    changed EventScript (micro_evtd.event) and micro_evtd.sample
+    (micro_evtd.conf) accordingly (see script-paths.patch). Also added
+    /usr/sbin to PATH in EventScript.
+  * Moved man pages to the correct sections, also removed COPYRIGHT from each
+    and put a copyright notice at the top in each. Corrected path to
+    micro_evtd.conf from /etc/micro_evtd.conf to
+    /etc/micro_evtd/micro_evtd.conf in man page micro_evtd.8.
+
+ -- Per Andersson <avtobiff@gmail.com>  Thu, 31 Jul 2008 15:24:46 +0200
+
 micro-evtd (3.3.3-6) unstable; urgency=low
 
   * Installed scripts and hooks manually in debian/rules so that diff.gz

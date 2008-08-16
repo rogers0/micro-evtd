@@ -1,3 +1,13 @@
+micro-evtd (3.3.3-6+lenny2) unstable; urgency=low
+
+  * Fixed udeb so It Works(TM).
+  * Patched bashisms in microapl.
+  * Deleted space from start message in init.d script.
+  * Removed note about suspend mode from description since this doesn't work
+    in the Debian version.
+
+ -- Per Andersson <avtobiff@gmail.com>  Sat, 16 Aug 2008 15:12:43 +0200
+
 micro-evtd (3.3.3-6+lenny1) unstable; urgency=low
 
   * Added Buffalo Linkstation Pro/Live to the udeb test (micro_evtd.command).

@@ -1,3 +1,0 @@
-#!/bin/sh
-
-/usr/sbin/micro_evtd.command start

@@ -4,3 +4,4 @@ conffile.patch
 eventscript.patch
 micro_evtd-default-conf.patch
 script-paths.patch
+microapl-bashisms.patch

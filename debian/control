@@ -13,8 +13,7 @@ Description: Daemon for Linkstation/Kuro micro controller
  Micro-evtd is a simple and small user space interface to the
  Linkstation/Kuro micro controller which is fitted to the ARM series of NAS
  devices. Micro-evtd is able to control and monitor fans, various LEDs,
- system temperature and two buttons. Users can also specify timed events
- for setting the device in standby and when to wake up again.
+ system temperature and two buttons.
 
 Package: micro-evtd-udeb
 Architecture: arm armel

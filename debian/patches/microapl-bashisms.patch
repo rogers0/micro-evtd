@@ -1,0 +1,28 @@
+Index: micro-evtd-3.3.3/Install/microapl
+===================================================================
+--- micro-evtd-3.3.3.orig/Install/microapl	2008-08-13 16:28:55.000000000 +0200
++++ micro-evtd-3.3.3/Install/microapl	2008-08-13 16:36:07.000000000 +0200
+@@ -27,16 +27,18 @@
+ 
+ 	local arg="$(echo -n $1 | tr 'a-z' 'A-Z')"
+ 
+-	local NOTE=${arg:0:1}
++	local NOTE=$(echo $arg | sed 's/^\([A-Z]\).*/\1/')
+ 	local NOTESTRING="$(eval echo \$NOTE$NOTE)"
+ 
+-	if [ "${arg:1:1}" == "M" ] ; then
+-	  local octave="$((${arg:2:1} + 5))"
++	if [ "$(echo $arg | sed 's/^.\([A-Z]\).*/\1/')" = "M" ] ; then
++	  local octave="$(($(echo $arg | sed 's/^..\([0-9]\).*/\1/') + 5))"
+ 	else
+-	  local octave="$((${arg:1:1} - 1))"
++	  local octave="$(($(echo $arg | sed 's/^.\([0-9]\).*/\1/') - 1))"
+ 	fi
+ 
+-	local result="${NOTESTRING:$((${octave} * 4)):4}"
++	# Build expression and pass it to sed, due to evaluation.
++	expr="s/^.{$(($octave*4))\}\(.\{4\}\).*/\1/"
++	local result="$(echo $NOTESTRING | sed $expr)"
+ 	if [ -n "$result" ] ; then
+ 	  echo -n $result
+ 	else

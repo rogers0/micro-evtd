@@ -1,2 +1,3 @@
-* Add more useful content to udeb.
+* Add more useful content to udeb. For instance expand the command argument.
 * Polish microapl man page.
+* Patch microapl in order to remove bashisms.

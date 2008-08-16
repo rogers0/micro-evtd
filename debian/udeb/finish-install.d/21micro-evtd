@@ -1,0 +1,5 @@
+#!/bin/sh
+
+if micro_evtd.command -t; then
+	micro_evtd.command finish
+fi

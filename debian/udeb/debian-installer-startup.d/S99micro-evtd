@@ -1,0 +1,6 @@
+#!/bin/sh
+
+if micro_evtd.command -t; then
+	micro_evtd.command start
+	micro_evtd.command startup
+fi

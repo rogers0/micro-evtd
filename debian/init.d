@@ -127,7 +127,7 @@ force_stop() {
 
 case "$1" in
   start)
-	log_daemon_msg "Starting $DESC " "$NAME"
+	log_daemon_msg "Starting $DESC" "$NAME"
         # Check if it's running first
         if running ;  then
             log_progress_msg "apparently already running"

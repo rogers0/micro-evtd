@@ -1,0 +1,168 @@
+#!/bin/bash
+# micro_evtd Event Script
+#
+# Sample Event Script written by Bob Perry
+# NOTE: Some of these events are not syncronous with the daemon.
+#
+# C - Transfer script to tmp location (RAM disk)
+# I - Dump fan speed and temp to tmp file my_status
+# 4 - Fan failure logic
+# O - Overheat logic
+# B - Button control
+# W - Warning information
+# S - Standby state machine
+# T - Display remaining time if standby enabled
+# P - Dump pid
+#
+# NOTE:
+# shutdown calls will operate on stock system but will ignore parameters
+
+PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin
+
+if [ "$1" = "C" ]; then
+  TMP=$4
+else
+  TMP=$1
+  DEBUG=$5
+  LOG=$4
+fi
+
+## Ensure tmp path is valid
+LEN=${#TMP}-1
+if [ $'\r' = "${TMP:${LEN}:1}" ]; then TMP=${TMP:0:$LEN} ; fi
+if [ ! -d ${TMP} ]; then TMP=/tmp ; fi
+
+if [ "$DEBUG" ] && [ -d "$LOG" ]; then
+  if [ "$DEBUG" -gt 0 ]; then
+	case "$DEBUG" in
+	   1) if [ "$1" = "I" ]; then echo "`date` $2,$3,$4" >> $LOG/micro_evtd.log ; fi ;;
+	   2) echo "`date` $1 $2 $3 $4" >> $LOG/micro_evtd.log ;;
+    esac
+  fi
+fi
+
+fan_fault() {
+	## Determine fan failure message and event
+	case $1 in
+	  0) logger -p user.emerg 'Fan failure detected' ; micro_evtd -s 02540011 ;;
+	  1) logger -p user.emerg 'Fan failure recovered' ; micro_evtd -s 02540000 ;;
+	  2) micro_evtd -s 02540012 ; shutdown -h now "Due to fan failure" ;;
+	esac 
+}
+
+create_script() {
+	## Create RAM version of control file
+	cp -a /etc/micro_evtd/micro_evtd.event $TMP/.
+	## Stop flashing LEDs and clear error codes
+	micro_evtd -q -s 02520000,02540000
+}
+
+over_heat() {
+	## Overheat detection and notification
+	if [ "$1" -eq 0 ]; then
+	  micro_evtd -s 02540100
+	elif [ "$1" -eq 1 ]; then
+	  logger -p user.emerg -i 'Overheat detected'
+	  ## Indicate error and push to full speed
+	  micro_evtd -s 02540112,013303
+	elif [ "$1" -gt 15 ]; then
+	  shutdown -h -P now "Due to overheat"
+	fi
+}
+
+dump_info() {
+	## Temp and fan speed info
+	echo "Temp=$1[C-Deg]" > $TMP/my_status
+	echo "Fan=$2rpm" >> $TMP/my_status
+	echo "Fan failures=$3" >> $TMP/my_status
+}
+
+stop() {
+	## Check if we are in standby
+	if [ -a $TMP/in_standby ]; then
+	  ## Windup, lights on and no flashing
+	  micro_evtd -s 013B03,02500000,02520000
+	  ## Takes a while to wind up here
+	  sleep 30
+	  ## Add SCSI device to bus
+	  echo "scsi add-single-device 0 0 0 0" > /proc/scsi/scsi
+	  ## Make sure we are clean
+	  kill -9 -1
+	else
+	  ## Flashy light thing
+	  micro_evtd -q -s 02520100
+	  shutdown -h -P now
+	fi
+}
+
+button() {
+	case "$2" in
+	  micon)  ## Some swift cooling please
+	    micro_evtd -q -s 013303,013000
+	    ## Micro IO
+	    case $1 in
+	      1)  stop ;;
+	      8)  /usr/local/bin/initsw.sh ;;
+	      16) /usr/local/bin/ups_shutdown.sh ;;
+	      65) ## Long power button press
+	          rm -f /boot/hddrootmode
+	          reboot ;;
+	     129) standby 0 ;;
+	     132) /usr/local/bin/initsw.sh ;;
+	     144) /usr/local/bin/ups_shutdown.sh ;;
+	     193) stop ;;
+	      *)  ;;
+	  esac
+	esac
+}
+
+message() {
+	case "$1" in
+	  0) logger -p user.emerg 'Entering standby in less than 5 minutes'
+	     micro_evtd -s 02540F00 ;;
+	  1) echo "Leaving standby in less than 5 minutes" ;;
+	esac
+}
+
+standby() {
+	case "$1" in
+	  0) logger -p user.emerg 'Shutting down for standby'
+	     mv /boot/pending_standby /boot/standby
+	     sync ; reboot ;;
+	  1) echo "Waking from standby" ; stop ;;
+	  2) rm -f /boot/standby
+	     echo -n "$2" > /boot/pending_standby ;; 
+	esac
+}
+
+timer() {
+	## DEAD time?
+	if [ $2 -lt 57005 ] ; then
+	  HOUR=`expr $2 / 60`
+	  MINS=`expr $HOUR "*" 60`
+	  MINS=`expr $2 - $MINS`
+	  TIME=`printf "%02d:%02d" ${HOUR} ${MINS}`
+	  echo "Uptime left=${TIME}" > $TMP/my_standby
+	  if [ "$1" -gt 0 ];  then echo "DST=Yes" >> $TMP/my_standby ; fi
+	else
+	  echo "Standby disabled" > $TMP/my_standby
+	fi
+}
+
+pid() {
+	echo "$1" > /var/run/micro_evtd.pid
+}
+
+case "$1" in
+	4)	fan_fault $2 ;;
+	C)	create_script ;;
+	O)	over_heat $2 ;;
+	I)	TEMP="${4//_/ }"
+		dump_info $2 $3 ${TEMP} ;;
+	B)	button $2 $4;;
+	W)	message $2 ;;
+	S)	standby $2 $3 ;;
+	T)	timer $2 $3 ;;
+	P)	pid $3 ;;
+esac
+exit 0

@@ -80,9 +80,13 @@ parse()
 			  LC=0 ; while [ ${LC} -lt 50 ] ;do ((LC ++)) ; done
 			done
 			echo "Standby delayed by additional ${DELAY} minutes" ;;
-		standby)
+		standby_remaining)
 			PID=`pidof micro_evtd`
 			/bin/kill -SIGHUP ${PID} ;;
+		standby)
+			micro_evtd -q -s 02520100
+		    mv -f /boot/pending_standby /boot/standby
+			reboot ;;
 		reboot)
 			$MICRO_q 000E ;;
 		system_get_mode)
@@ -401,6 +405,7 @@ case $1 in
 	echo "shutdown_cancel"
 	echo "skip_standby"
 	echo "delay_standby [arg]"
+	echo "standby_remaining"
 	echo "standby"
 	echo "reboot"
 	echo "temp_get"

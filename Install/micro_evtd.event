@@ -127,7 +127,8 @@ message() {
 standby() {
 	case "$1" in
 	  0) logger -p user.emerg 'Shutting down for standby'
-	     mv /boot/pending_standby /boot/standby
+	     micro_evtd -q -s 02520100
+	     mv -f /boot/pending_standby /boot/standby
 	     sync ; reboot ;;
 	  1) echo "Waking from standby" ; stop ;;
 	  2) rm -f /boot/standby

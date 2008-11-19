@@ -122,7 +122,6 @@ long l_TimerEvent=3420300; /* Careful here */
 char c_FirstTimeFlag=1;
 char c_TimerFlag = 0;
 int i_instandby = 0;
-time_t tworktime;
 int resourceLock_fd = 0;
 int s_dst = 0; // Daylight saving flag
 #ifdef TEST
@@ -131,6 +130,7 @@ int s_dst = 0; // Daylight saving flag
 char c_Skip = 0;
 int iButtonAction = 0; ///< Defines type of button action, 0=OFF, 128=STANDBY
 int iButtonHeld = 0;
+time_t tOnLastTime = 999;
 
 static void open_serial(void);
 static int writeUART(int, unsigned char*);
@@ -680,8 +680,8 @@ static void check_shutdown(time_t tt_LastTimerEventPing)
 
 		/* User demanded next time? */
 		else if (c_Skip) {
-			c_Skip = 0;
 			check_configuration(1);
+			c_Skip = 0;
 		}
 
 		else {
@@ -1025,13 +1025,9 @@ static void parse_configuration(char* buff)
 	char bTime=1; /* Specifies time format */
 	char* pos;
 	char* last; // Used by strtoc_r to point to current token
-	char twelve = 0;
-	long iOffTime = -1;
-	long iOnTime = -1;
 	long current_time;
 	time_t ltime;
 	struct tm* decode_time;
-	char message[80];
 	int iHour;
 	int iMinutes;
 	int iGroup = 0;
@@ -1256,10 +1252,24 @@ process:
 	
 	// Handle standby and wakeup timer
 	if (iProcessDay >= 0 && 0 == i_instandby) {
+		char message[80];
+		char twelve = 0;
+		long iOffTime;
+		long iOnTime;
+		time_t tworktime;
+
 		c_TimerFlag = 1;
 		iOffTime = iOnTime = 0;
 		GetTime(current_time, poffTimer, &iOffTime);
-		GetTime(iOffTime, ponTimer, &iOnTime);
+		// Skip? Yes then plug on time event for message output
+		if (c_Skip) {
+			// Did we have a on time event before?  If so, plug the time
+			if (tOnLastTime)
+				iOnTime = 1;
+		}
+		// No, get next on time event
+		else
+			GetTime(iOffTime, ponTimer, &iOnTime);
 
 		/* Time shutdown so check dates, otherwise it is an interval only */
 		if (iOffTime < current_time) {
@@ -1276,24 +1286,30 @@ process:
 		sprintf(message, "Standby is set with %02d/%02d %02d:%02d",
 			decode_time->tm_mon+1, decode_time->tm_mday, decode_time->tm_hour, decode_time->tm_min);
 
+		// Update the on-time if we have a wake-up event
 		if (iOnTime > 0) {
-			if (iOnTime < current_time) {
-				iOnTime = ((TWELVEHR + (iOnTime - (current_time - TWELVEHR))) * 60);
-			}
-			else {
-				iOnTime = (iOnTime - current_time) * 60;
-				if (twelve) {
-					iOnTime += (TWENTYFOURHR*60);
-					}
-			}
+			// are not skipping a current standby event?
+			if (!c_Skip) {
+				if (iOnTime < current_time) {
+					iOnTime = ((TWELVEHR + (iOnTime - (current_time - TWELVEHR))) * 60);
+				}
+				else {
+					iOnTime = (iOnTime - current_time) * 60;
+					if (twelve) {
+						iOnTime += (TWENTYFOURHR*60);
+						}
+				}
 
-			// See if a longer sleep period
-			if (iOnTime < iOffTime) {
-				iOnTime += (TWENTYFOURHR*60);
+				// See if a longer sleep period
+				if (iOnTime < iOffTime) {
+					iOnTime += (TWENTYFOURHR*60);
+				}
+				
+				// Record time
+				tOnLastTime = tworktime = ltime + iOnTime;
 			}
 			
-			tworktime = ltime + iOnTime;
-			decode_time = localtime(&tworktime);
+			decode_time = localtime(&tOnLastTime);
 
 			sprintf(message, "%s-%02d/%02d %02d:%02d", message,
 				decode_time->tm_mon+1, decode_time->tm_mday, decode_time->tm_hour, decode_time->tm_min);
@@ -1310,8 +1326,9 @@ process:
 #endif
 		l_TimerEvent = iOffTime;
 
-		// Update the pending timer system flag
-		execute_command2(TIMED_STANDBY, "", CALL_WAIT, 2, tworktime);
+		// Update the pending timer system flag if we need too
+		if (!c_Skip)
+			execute_command2(TIMED_STANDBY, "", CALL_WAIT, 2, tworktime);
 
 		/* Destroy the macro timer objects */
 		destroyObject(poffTimer);

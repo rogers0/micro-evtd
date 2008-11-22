@@ -20,17 +20,16 @@
 PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin
 
 if [ "$1" = "C" ]; then
-  TMP=$4
+  TMP=$5
+  ## Ensure tmp path is valid
+  LEN=${#TMP}-1
+  if [ $'\r' = "${TMP:${LEN}:1}" ]; then TMP=${TMP:0:$LEN} ; fi
+  if [ ! -d ${TMP} ]; then TMP=/tmp ; fi
 else
-  TMP=$1
-  DEBUG=$5
-  LOG=$4
+  TMP=`dirname $0`
+  DEBUG=$6
+  LOG=$5
 fi
-
-## Ensure tmp path is valid
-LEN=${#TMP}-1
-if [ $'\r' = "${TMP:${LEN}:1}" ]; then TMP=${TMP:0:$LEN} ; fi
-if [ ! -d ${TMP} ]; then TMP=/tmp ; fi
 
 if [ "$DEBUG" ] && [ -d "$LOG" ]; then
   if [ "$DEBUG" -gt 0 ]; then

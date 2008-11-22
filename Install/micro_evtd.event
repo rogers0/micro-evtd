@@ -106,7 +106,7 @@ button() {
 	      65) ## Long power button press
 	          rm -f /boot/hddrootmode
 	          reboot ;;
-	     129) standby 0 ;;
+	     129) standby 1 ;;
 	     132) /usr/local/bin/initsw.sh ;;
 	     144) /usr/local/bin/ups_shutdown.sh ;;
 	     193) stop ;;

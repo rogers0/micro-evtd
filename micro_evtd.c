@@ -109,7 +109,7 @@ int refreshRate=40;
 int iHysteresis=2;
 char i_Use_Trend=1;
 char log_path[20]="/var/log";
-int iDebugLevel=1;
+int iDebugLevel=0;
 char strTmpPath[20]="/tmp";
 int i_FileDescriptor = 0;
 int i_Poll = 0;
@@ -165,7 +165,7 @@ static void destroyObject(TIMER*);
 */	
 static int execute_command(char cmd, char cmd2, char type)
 {
-	return execute_command2(cmd, "", type, cmd2, CALL_NO_WAIT);
+	return execute_command2(cmd, ".", CALL_NO_WAIT, type, cmd2);
 }
 
 /**
@@ -335,7 +335,7 @@ static void termination_handler(int signum)
 		/* Reset warning flag */
 		c_FirstTimeFlag = 1;
 	case SIGHUP:
-		execute_command2(TIMER_INFO, "", CALL_NO_WAIT, s_dst, l_TimerEvent/60);
+		execute_command2(TIMER_INFO, ".", CALL_NO_WAIT, s_dst, l_TimerEvent/60);
 		break;
 	/* Signalled skip this shutdown time */
 	case SIGINT:
@@ -1328,7 +1328,7 @@ process:
 
 		// Update the pending timer system flag if we need too
 		if (!c_Skip)
-			execute_command2(TIMED_STANDBY, "", CALL_WAIT, 2, tworktime);
+			execute_command2(TIMED_STANDBY, ".", CALL_WAIT, 2, tworktime);
 
 		/* Destroy the macro timer objects */
 		destroyObject(poffTimer);
@@ -1547,7 +1547,7 @@ int main(int argc, char *argv[])
 	check_configuration(0);
 
 	/* Create pid file */
-	execute_command2(CREATE_PID, "", CALL_WAIT, 0, getpid());
+	execute_command2(CREATE_PID, ".", CALL_WAIT, 0, getpid());
 	
 	// Go do our thing
 	micro_evtd_main();

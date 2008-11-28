@@ -131,6 +131,7 @@ char c_Skip = 0;
 int iButtonAction = 0; ///< Defines type of button action, 0=OFF, 128=STANDBY
 int iButtonHeld = 0;
 time_t tOnLastTime = 999;
+char alt = 1; ///< Provides control for alternating sound on held button
 
 static void open_serial(void);
 static int writeUART(int, unsigned char*);
@@ -243,7 +244,7 @@ static void open_gpio(void)
 		}
 	}
 #else
-#warning "TS Build does not yet support button events"
+#warning "TS Build supports button events via serial control"
 #endif
 }
 
@@ -709,51 +710,59 @@ static void gpio_button_press(void)
 {
 	// Check to see if we have a GPIO interupt, takes 4 seconds to latch (must be a timer here somewhere?)
 	if (gpio>0) {
-		char alt = 0;
 		/* Check both interrupt and PIN; if we run without GPIO IRQ then we can capture it quicker here. */
 		if ((gpio[GPP_INT_CAUSE_REG] & 0x04) != 0 || (gpio[GPP_DATA_IN_REG] & 0x04) != 0) {
 			/* Clear cause of interrupt */
 			gpio[GPP_INT_CAUSE_REG] &= ~0x4;
 			alt = iButtonHeld = 1;
 		}
-		
-		/* Has button been and still is pressed? */
-		if (iButtonHeld) {
-			char cButtonHeld = iButtonHeld > ENTER_EM_TIME;
-			int iSwitch = 0xF ^ writeUART(2, (unsigned char*)"\x080\x036");
-			iButtonHeld +=1;
+	}
+	
+	// Provide an alternative button control in the event of gpio failure (support 
+	else {
+		int iButton = 0xF ^ writeUART(2, (unsigned char*)"\x080\x036");
+		if (iButton != 0 && iLastSwitch != iButton)
+			alt = iButtonHeld = 1;
+	}
+	
+	/* Has button been and still is pressed? */
+	if (iButtonHeld) {
+		char cButtonHeld = iButtonHeld > ENTER_EM_TIME;
+		int iSwitch = 0xF ^ writeUART(2, (unsigned char*)"\x080\x036");
+		iButtonHeld +=1;
 
-			/* Button held for longer than shutdown event */
-			if (ENTER_EM_TIME == iButtonHeld)
-				alt = 2;
-			
-			/* Check for switch event change */
-			if (iLastSwitch != iSwitch) {
-				/* On release please */
-				if (0 == iSwitch) {
-					if (cButtonHeld)
-						iLastSwitch = 65;
-					iButtonHeld = 0;
-					alt = 3;
-					/* Pipe data out through the event  script */
-					execute_command2(BUTTON_EVENT, "micon", CALL_NO_WAIT, (iButtonAction | iLastSwitch), 0);
-				}
-					
-				iLastSwitch = iSwitch;
+		/* Button held for longer than shutdown event */
+		if (ENTER_EM_TIME == iButtonHeld)
+			alt = 3;
+		
+		/* Check for switch event change */
+		if (iLastSwitch != iSwitch) {
+			/* On release please */
+			if (0 == iSwitch) {
+				if (cButtonHeld)
+					iLastSwitch = 65;
+				iButtonHeld = 0;
+				alt = 3;
+				/* Pipe data out through the event  script */
+				execute_command2(BUTTON_EVENT, "micon", CALL_NO_WAIT, (iButtonAction | iLastSwitch), 0);
 			}
-			
-			/* Sound button press */
-			if (1 == alt) {
-				writeUART(3, (unsigned char*)"\x001\x030\x003");
-				alt = 0;
-			}
-			
-			/* Toggle sound if button held too long */
-			else if (3 == alt || cButtonHeld) {
-				writeUART(3, (unsigned char*)"\x001\x030\x000");
-				alt = 1;
-			}
+				
+			iLastSwitch = iSwitch;
 		}
+		
+		if (1 == alt) {
+			alt = 1;
+		}
+		
+		/* Toggle sound if button held too long */
+		else if (3 == alt || cButtonHeld) {
+			alt = 2;
+		}
+
+		if (alt >0)
+			execute_command2(BUTTON_EVENT, "micon", CALL_NO_WAIT, (199 + alt), 0);
+
+		alt--;
 	}
 }
 

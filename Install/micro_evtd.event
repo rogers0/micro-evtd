@@ -110,6 +110,8 @@ button() {
 	     132) /usr/local/bin/initsw.sh ;;
 	     144) /usr/local/bin/ups_shutdown.sh ;;
 	     193) stop ;;
+	     200) micro_evtd -s 013003 ;;
+	     201) micro_evtd -s 013000 ;;
 	      *)  ;;
 	  esac
 	esac

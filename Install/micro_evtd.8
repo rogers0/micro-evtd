@@ -1,6 +1,6 @@
 .\" Title: micro_evtd
 .\"Author: Bob Perry
-.TH MICRO_EVTD 8 "October 2008" "3.3" "User Commands"
+.TH MICRO_EVTD 8 "November 2008" "3.3" "User Commands"
 .nh
 .ad l
 .SH NAME
@@ -70,9 +70,14 @@ occurs to awaken the box.
 All events, whether mechanical button operation, or software reset/shutdown
 actions are routed through \fBmicro_evtd.event(8)\fR
 .TP
-\fIPOWER\fR On press, a button event message is sent.
+\fIPOWER\fR
+On release, a button event message is sent.
 .TP
-\fIRESET\fR On press, a button event message is sent.
+\fIRESET\fR
+On release, a button event message is sent.
+.LP
+If the button is held for more than 4 seconds then an alternating sequence
+event is sent.
 .SH FILES
 .RS 0
 /etc/micro_evtd/micro_evtd.conf

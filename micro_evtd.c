@@ -121,7 +121,7 @@ int m_fd = 0;
 long l_TimerEvent=3420300; /* Careful here */
 char c_FirstTimeFlag=1;
 char c_TimerFlag = 0;
-int i_instandby = 0;
+char i_instandby = 0;
 int resourceLock_fd = 0;
 int s_dst = 0; // Daylight saving flag
 #ifdef TEST
@@ -487,7 +487,8 @@ exit:
 static int temp_get(void)
 {
 	int iTemp = writeUART(2, (unsigned char*)"\x080\x037");
-	return iTemp;
+	// Ensure within range
+	return ((iTemp & 0x80) != 0 ? 0 : iTemp);
 }
 
 /**
@@ -1549,14 +1550,19 @@ int main(int argc, char *argv[])
 	// Lock out device resource
 	getResourceLock();
 	
+	// Check configuration and establish the tmp paths
+	i_instandby++;
+	check_configuration(0);
+	i_instandby--;
+
 	// Ensure that our script is copied to RAMDISK first
 	execute_command(CP_SCRIPT, 0, CALL_WAIT);
 
-	// Check configuration and establish the tmp paths
-	check_configuration(0);
-
 	/* Create pid file */
 	execute_command2(CREATE_PID, ".", CALL_WAIT, 0, getpid());
+
+	// Force another update to establish standby timers
+	check_configuration(1);
 	
 	// Go do our thing
 	micro_evtd_main();

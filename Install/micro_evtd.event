@@ -29,14 +29,11 @@ else
   TMP=`dirname $0`
   DEBUG=$6
   LOG=$5
-fi
-
-if [ "$DEBUG" ] && [ -d "$LOG" ]; then
-  if [ "$DEBUG" -gt 0 ]; then
-	case "$DEBUG" in
-	   1) if [ "$1" = "I" ]; then echo "`date` $2,$3,$4" >> $LOG/micro_evtd.log ; fi ;;
-	   2) echo "`date` $1 $2 $3 $4" >> $LOG/micro_evtd.log ;;
-    esac
+  if [ "$DEBUG" -gt 0 ] && [ -d "$LOG" ]; then
+	  case "$DEBUG" in
+	     1) if [ "$1" = "I" ]; then echo "`date` $2,$3,$4" >> $LOG/micro_evtd.log ; fi ;;
+	     2) echo "`date` $1 $2 $3 $4" >> $LOG/micro_evtd.log
+      esac
   fi
 fi
 
@@ -45,7 +42,7 @@ fan_fault() {
 	case $1 in
 	  0) logger -p user.emerg 'Fan failure detected' ; micro_evtd -s 02540011 ;;
 	  1) logger -p user.emerg 'Fan failure recovered' ; micro_evtd -s 02540000 ;;
-	  2) micro_evtd -s 02540012 ; shutdown -h now "Due to fan failure" ;;
+	  2) micro_evtd -s 02540012 ; shutdown -h now "Due to fan failure"
 	esac 
 }
 
@@ -71,9 +68,7 @@ over_heat() {
 
 dump_info() {
 	## Temp and fan speed info
-	echo "Temp=$1[C-Deg]" > $TMP/my_status
-	echo "Fan=$2rpm" >> $TMP/my_status
-	echo "Fan failures=$3" >> $TMP/my_status
+	echo -e "Temp=$1[C-Deg]\nFan=$2rpm\nFan Failures=$3" > $TMP/my_status
 }
 
 stop() {
@@ -112,7 +107,7 @@ button() {
 	     193) stop ;;
 	     200) micro_evtd -s 013003 ;;
 	     201) micro_evtd -s 013000 ;;
-	      *)  ;;
+	      *)
 	  esac
 	esac
 }
@@ -159,8 +154,7 @@ case "$1" in
 	4)	fan_fault $2 ;;
 	C)	create_script ;;
 	O)	over_heat $2 ;;
-	I)	TEMP="${4//_/ }"
-		dump_info $2 $3 ${TEMP} ;;
+	I)	dump_info $2 $3 ${4//_/ } ;;
 	B)	button $2 $4;;
 	W)	message $2 ;;
 	S)	standby $2 $3 ;;

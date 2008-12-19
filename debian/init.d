@@ -1,28 +1,13 @@
 #!/bin/sh
 #
-# Copyright (c) 2007 Javier Fernandez-Sanguino <jfs@debian.org>
-#
-# This is free software; you may redistribute it and/or modify
-# it under the terms of the GNU General Public License as
-# published by the Free Software Foundation; either version 2,
-# or (at your option) any later version.
-#
-# This is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License with
-# the Debian operating system, in /usr/share/common-licenses/GPL;  if
-# not, write to the Free Software Foundation, Inc., 59 Temple Place,
-# Suite 330, Boston, MA 02111-1307 USA
-#
 ### BEGIN INIT INFO
 # Provides:          micro-evtd
-# Required-Start:    $local_fs
-# Required-Stop:     $local_fs
+# Required-Start:    $all
+# Required-Stop:     
+# Should-Start:      
+# Should-Stop:       
 # Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
+# Default-Stop:      0 6
 # Short-Description: Daemon for Linkstation/Kuro micro controller
 # Description:       Micro-evtd is able to control and monitor fans,
 #                    various LEDs, system temperature and two buttons. It
@@ -79,6 +64,22 @@ running() {
     return 0
 }
 
+check_supported_device() {
+# Check if current platform is supported.
+    device=$(sed -n '/Hardware/ {s/^.*: //;p}' /proc/cpuinfo)
+    case $device in
+        # Supported hardware, start the process using the wrapper
+        "Buffalo Linkstation Pro/Live" | "Buffalo/Revogear Kurobox Pro")
+            return 0
+            ;;
+        # Hardware not supported, tell and die
+        *)
+            log_failure_msg "micro-evtd error: device is not supported"
+            exit 1
+            ;;
+    esac
+}
+
 start_server() {
 # Start the process using the wrapper
     start-stop-daemon --start --quiet --pidfile $PIDFILE \
@@ -127,6 +128,7 @@ force_stop() {
 
 case "$1" in
   start)
+        check_supported_device
 	log_daemon_msg "Starting $DESC" "$NAME"
         # Check if it's running first
         if running ;  then
@@ -172,6 +174,7 @@ case "$1" in
         fi
 	;;
   restart|force-reload)
+        check_supported_device
         log_daemon_msg "Restarting $DESC" "$NAME"
         stop_server
         # Wait some sensible amount, some server need this

@@ -1,3 +1,4 @@
-* Add more useful content to udeb. For instance expand the command argument.
 * Polish microapl man page.
-* Patch microapl in order to remove bashisms.
+* Add beeps and led signals to init.d when starting and stopping daemon.
+* Investigate the scheduled suspend/sleep and wakeup functionality.
+  What is needed in the initrd?

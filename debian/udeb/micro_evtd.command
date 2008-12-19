@@ -39,7 +39,7 @@ case "$1" in
 		;;
 	init)
 		$MICROAPL led_set_blink 0
-		$MICROAPL bz_melody 30 b4
+		$MICROAPL bz_melody 30 b4 || true
 		;;
 	start)
 		# Start micro_evtd if not already running, exit with failure

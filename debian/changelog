@@ -1,3 +1,13 @@
+micro-evtd (3.3.3-6+lenny3) unstable; urgency=low
+
+  * Added safety measure in udeb for argument incompability between
+    micro_evtd.command (microapl) and busybox implementation of sleep.
+    (Closes: #506945)
+  * Added beep and led signaling when daemon starts and stops and a check
+    for supported hardware in init script. (Closes: 508218)
+
+ -- Per Andersson <avtobiff@gmail.com>  Fri, 19 Dec 2008 10:16:59 +0100
+
 micro-evtd (3.3.3-6+lenny2) unstable; urgency=low
 
   * Fixed udeb so It Works(TM).

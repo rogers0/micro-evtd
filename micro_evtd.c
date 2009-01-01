@@ -169,7 +169,7 @@ static void validate_time(time_t ltime);
 */	
 static int execute_command(char cmd, char cmd2, char type)
 {
-	return execute_command2(cmd, ".", CALL_NO_WAIT, type, cmd2);
+	return execute_command2(cmd, ".", type, type, cmd2);
 }
 
 /**

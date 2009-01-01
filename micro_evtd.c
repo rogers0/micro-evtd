@@ -1311,6 +1311,8 @@ static void validate_time(time_t ltime)
 	time_t tworktime;
 	struct tm* decode_time;
 	long current_time;
+	long offTime = 0;
+	long onTime = 0;
 
 	decode_time = localtime(&ltime);
 	current_time = (decode_time->tm_hour*60) + decode_time->tm_min;
@@ -1318,13 +1320,13 @@ static void validate_time(time_t ltime)
 	/* Time shutdown so check dates, otherwise it is an interval only */
 	if (iOffTime < current_time) {
 		twelve = 1;
-		iOffTime = ((TWELVEHR + (iOffTime - (current_time - TWELVEHR))) * 60);
+		offTime = ((TWELVEHR + (iOffTime - (current_time - TWELVEHR))) * 60);
 	}
 	else {
-		iOffTime = ((iOffTime - current_time) * 60);
+		offTime = ((iOffTime - current_time) * 60);
 	}
 		
-	tworktime = ltime + iOffTime;
+	tworktime = ltime + offTime;
 	decode_time = localtime(&tworktime);
 	
 	sprintf(message, "Standby is set with %02d/%02d %02d:%02d",
@@ -1335,22 +1337,22 @@ static void validate_time(time_t ltime)
 		// are not skipping a current standby event?
 		if (!c_Skip) {
 			if (iOnTime < current_time) {
-				iOnTime = ((TWELVEHR + (iOnTime - (current_time - TWELVEHR))) * 60);
+				onTime = ((TWELVEHR + (iOnTime - (current_time - TWELVEHR))) * 60);
 			}
 			else {
-				iOnTime = (iOnTime - current_time) * 60;
+				onTime = (iOnTime - current_time) * 60;
 				if (twelve) {
-					iOnTime += (TWENTYFOURHR*60);
-					}
+					onTime += (TWENTYFOURHR*60);
+				}
 			}
 
 			// See if a longer sleep period
-			if (iOnTime < iOffTime) {
-				iOnTime += (TWENTYFOURHR*60);
+			if (onTime < offTime) {
+				onTime += (TWENTYFOURHR*60);
 			}
 			
 			// Record time
-			tOnLastTime = tworktime = ltime + iOnTime;
+			tOnLastTime = tworktime = ltime + onTime;
 		}
 		
 		decode_time = localtime(&tOnLastTime);
@@ -1368,7 +1370,7 @@ static void validate_time(time_t ltime)
 #ifdef TEST		
 	printf("%s\n", message);
 #endif
-	l_TimerEvent = iOffTime;
+	l_TimerEvent = offTime;
 
 	// Update the pending timer system flag if we need too
 	if (!c_Skip)

@@ -147,7 +147,7 @@ static int temp_get(void);
 static void open_gpio(void);
 static void GetTime(long, TIMER*, long*);
 static char FindNextToday(long, TIMER*, long*);
-static char FindNextDay(long, TIMER*, long*, long*);
+static char FindNextDay(int, long, TIMER*, long*, long*);
 static void destroyObject(TIMER*);
 static void validate_time(time_t ltime);
 
@@ -1003,6 +1003,52 @@ static void micro_evtd_main(void)
 /**
 ************************************************************************
 *
+*  function    : populateObject()
+*
+*  description : Populates a new timer entry(s) with the supplied data.
+*
+*  arguments   : (in)	TIMER*				= pointer to configuration file
+*											  contents
+*						int					= hour
+*						int					= minutes
+*						int					= first day grouping
+*						int					= current day this applies too
+*						int					= flag indicating a group
+*					  
+*  returns     : 		void
+*
+************************************************************************
+*/
+static void populateObject(TIMER* pTimer, int iHour, int iMinutes, int iFirstDay, int iProcessDay, int iGroup)
+{
+	/* Ensure time entry is valid */
+	if ((iHour>=0 && iHour <=48) && (iMinutes >=0 && iMinutes <= 120)) {
+		/* Group macro so create the other events */
+		if (iGroup!=0) {
+			int j = iFirstDay-1;
+			/* Create the multiple entries for each day in range specified */
+			while (j!=iProcessDay) {
+				j++;
+				if (j>7) j = 0;
+				pTimer->day = (char)j;
+				pTimer->time = (iHour*60)+iMinutes;
+				/* Allocate space for the next event object */
+				pTimer->pointer = (void*)calloc(sizeof(TIMER), sizeof(char));
+				pTimer = pTimer->pointer;
+			}
+		}
+		else {
+			pTimer->day = iProcessDay;
+			pTimer->time = (iHour*60)+iMinutes;
+			/* Allocate space for the next event object */
+			pTimer->pointer = (void*)calloc(sizeof(TIMER), sizeof(char));
+		}
+	}
+}
+
+/**
+************************************************************************
+*
 *  function    : parse_configuration()
 *
 *  description : Parse the configuration file entries.  Depending on the
@@ -1034,7 +1080,6 @@ static void parse_configuration(char* buff)
 			"BUTTON"
 			};
 	int i;
-	int j;
 	int cmd;
 	char bTime=1; /* Specifies time format */
 	char* pos;
@@ -1111,7 +1156,7 @@ static void parse_configuration(char* buff)
 					/* After the first remark we have ignored, make sure we detect a valid line
 					and move the tokeniser pointer if none remark field */
 					if ('#' != pos[0]) {
-						j = strlen(pos);
+						int j = strlen(pos);
 						*(last-1)=(char)'='; /* Plug the '0' with token parameter  */
 						last=last-(j+1);
 
@@ -1194,35 +1239,11 @@ process:
 						iMinutes+=iFixer - ((int)(iFixer/60))*60;
 					}
 
-					/* Ensure time entry is valid */
-					if ((iHour>=0 && iHour <=48) && (iMinutes >=0 && iMinutes <= 120)) {
-						/* Group macro so create the other events */
-						if (iGroup!=0) {
-							j = iFirstDay-1;
-							/* Create the multiple entries for each day in range specified */
-							while (j!=iProcessDay) {
-								j++;
-								if (j>7) j = 0;
-								pTimer->day = (char)j;
-								pTimer->time = (iHour*60)+iMinutes;
-								/* Allocate space for the next event object */
-								pTimer->pointer = (void*)calloc(sizeof(TIMER), sizeof(char));
-								pTimer = (TIMER*)pTimer->pointer;
-							}
-						}
-						else {
-							pTimer->day = iProcessDay;
-							pTimer->time = (iHour*60)+iMinutes;
-							/* Allocate space for the next event object */
-							pTimer->pointer = (void*)calloc(sizeof(TIMER), sizeof(char));
-							pTimer = (TIMER*)pTimer->pointer;
-						}
-					}
-
+					populateObject(pTimer, iHour, iMinutes, iFirstDay, iProcessDay, iGroup);
+					
 					/* Update our pointers */
-					if (cmd == 8) pOn = pTimer;
-					else pOff = pTimer;
-
+					if (cmd == 8) pOn = (TIMER*)pTimer->pointer;
+					else pOff = (TIMER*)pTimer->pointer;
 					break;
 				// Get on time
 				case 9:
@@ -1315,6 +1336,7 @@ static void validate_time(time_t ltime)
 	long onTime = 0;
 
 	decode_time = localtime(&ltime);
+	last_day = decode_time->tm_wday;
 	current_time = (decode_time->tm_hour*60) + decode_time->tm_min;
 
 	/* Time shutdown so check dates, otherwise it is an interval only */
@@ -1682,7 +1704,8 @@ static char FindNextToday(long timeNow, TIMER* pTimer, long* time)
 *  description : Find the next valid time object from the 'timeNow' from
 *				 the current day.
 *
-*  arguments   : (in)	long				= time to scan against
+*  arguments   : (in)	int					= current day (SUN=0...SAT=6)
+*						long				= time to scan against
 *						TIMER*				= pointer to timer object
 *						long*				= pointer to located time
 *						long*				= pointer to day differance (seconds)
@@ -1692,17 +1715,21 @@ static char FindNextToday(long timeNow, TIMER* pTimer, long* time)
 *
 ************************************************************************
 */
-static char FindNextDay(long timeNow, TIMER* pTimer, long* time, long* offset)
+static char FindNextDay(int iDay, long timeNow, TIMER* pTimer, long* time, long* offset)
 {
 	/* Locate the next valid event */
 	char iLocated = 0;
 
 	while(pTimer != NULL && pTimer->pointer != NULL) {
 		/* Next event for tomorrow onwards? */
-		if (pTimer->day > last_day) {
+		if (pTimer->day > iDay) {
 			/* Grouped events?, ie only tomorrow */
-			if (pTimer->day > last_day) {
-				*offset = (pTimer->day - last_day) * TWENTYFOURHR;
+			if (pTimer->day > iDay && iDay >= 0) {
+				*offset = (pTimer->day - iDay) * TWENTYFOURHR;
+			}
+			else {
+				*offset = ((6 - last_day) + pTimer->day) * TWENTYFOURHR;
+				*offset += TWENTYFOURHR;
 			}
 			iLocated++;
 			*time = pTimer->time;
@@ -1745,14 +1772,13 @@ static void GetTime(long timeNow, TIMER* pTimerLocate, long* time)
 		/* Failed to find a time for today, look for the next power-up time */
 		if (0 == onLocated) {
 			pTimer = pTimerLocate;
-			onLocated = FindNextDay(timeNow, pTimer, time, &lOffset);
+			onLocated = FindNextDay(last_day, timeNow, pTimer, time, &lOffset);
 		}
 
 		/* Nothing for week-end, look at start */
 		if (0 == onLocated) {
-			*time = pTimerLocate->time;
-			lOffset = ((6 - last_day) + pTimerLocate->day) * TWENTYFOURHR;
-			lOffset += TWENTYFOURHR;
+			pTimer = pTimerLocate;
+			onLocated = FindNextDay(-1, timeNow, pTimer, time, &lOffset);
 		}
 
 		*time += lOffset;

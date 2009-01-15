@@ -1015,11 +1015,11 @@ static void micro_evtd_main(void)
 *						int					= current day this applies too
 *						int					= flag indicating a group
 *					  
-*  returns     : 		void
+*  returns     : 		TIMER*				= new timer object for this group
 *
 ************************************************************************
 */
-static void populateObject(TIMER* pTimer, int iHour, int iMinutes, int iFirstDay, int iProcessDay, int iGroup)
+static TIMER* populateObject(TIMER* pTimer, int iHour, int iMinutes, int iFirstDay, int iProcessDay, int iGroup)
 {
 	/* Ensure time entry is valid */
 	if ((iHour>=0 && iHour <=48) && (iMinutes >=0 && iMinutes <= 120)) {
@@ -1042,8 +1042,12 @@ static void populateObject(TIMER* pTimer, int iHour, int iMinutes, int iFirstDay
 			pTimer->time = (iHour*60)+iMinutes;
 			/* Allocate space for the next event object */
 			pTimer->pointer = (void*)calloc(sizeof(TIMER), sizeof(char));
+			pTimer = pTimer->pointer;
 		}
 	}
+
+	// Return the pointer
+	return pTimer;
 }
 
 /**
@@ -1239,11 +1243,11 @@ process:
 						iMinutes+=iFixer - ((int)(iFixer/60))*60;
 					}
 
-					populateObject(pTimer, iHour, iMinutes, iFirstDay, iProcessDay, iGroup);
+					TIMER* pTime = populateObject(pTimer, iHour, iMinutes, iFirstDay, iProcessDay, iGroup);
 					
 					/* Update our pointers */
-					if (cmd == 8) pOn = (TIMER*)pTimer->pointer;
-					else pOff = (TIMER*)pTimer->pointer;
+					if (cmd == 8) pOn =  pTime;
+					else pOff =  pTime;
 					break;
 				// Get on time
 				case 9:
@@ -1689,7 +1693,7 @@ static char FindNextToday(long timeNow, TIMER* pTimer, long* time)
 				*time = pTimer->time;
 			}
 		}
-
+			
 		pTimer = pTimer->pointer;
 	}
 
@@ -1702,7 +1706,7 @@ static char FindNextToday(long timeNow, TIMER* pTimer, long* time)
 *  function    : FindNextDay()
 *
 *  description : Find the next valid time object from the 'timeNow' from
-*				 the current day.
+*				 the current day that is the earliest available time.
 *
 *  arguments   : (in)	int					= current day (SUN=0...SAT=6)
 *						long				= time to scan against
@@ -1719,26 +1723,37 @@ static char FindNextDay(int iDay, long timeNow, TIMER* pTimer, long* time, long*
 {
 	/* Locate the next valid event */
 	char iLocated = 0;
-
+	int iLocatedDay = iDay;
 	while(pTimer != NULL && pTimer->pointer != NULL) {
 		/* Next event for tomorrow onwards? */
 		if (pTimer->day > iDay) {
-			/* Grouped events?, ie only tomorrow */
-			if (pTimer->day > iDay && iDay >= 0) {
-				*offset = (pTimer->day - iDay) * TWENTYFOURHR;
+			// Located, get any earlier time/day
+			if (iLocated) {
+				if (pTimer->day < iLocatedDay && *time > pTimer->time) {
+					*time = pTimer->time;
+					iLocatedDay = pTimer->day;
+				}
 			}
+			// Record this time and date
 			else {
-				*offset = ((6 - last_day) + pTimer->day) * TWENTYFOURHR;
-				*offset += TWENTYFOURHR;
+				iLocated++;
+				*time = pTimer->time;
+				iLocatedDay = pTimer->day;
 			}
-			iLocated++;
-			*time = pTimer->time;
-			break;
 		}
 
 		pTimer = pTimer->pointer;
 	}
 	
+	/* Grouped events?, ie only tomorrow */
+	if (iLocatedDay && iDay >= 0) {
+		*offset = (iLocatedDay - iDay) * TWENTYFOURHR;
+	}
+	else {
+		*offset = ((6 - last_day) + iLocatedDay) * TWENTYFOURHR;
+		*offset += TWENTYFOURHR;
+	}
+
 	return iLocated;
 }
 

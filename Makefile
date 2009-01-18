@@ -18,6 +18,7 @@ clean: micro_evtd
 	-rm -f /etc/default/micro_evtd
 	-rm -f /etc/micro_evtd/EventScript
 	-rm -f /usr/local/sbin/micro_evtd
+	-rm -f /usr/local/sbin/microapl
 	-rm -f /usr/local/man/man8/micro_evtd.8
 	-rm -f /usr/local/man/man8/micro_evtd.event.8
 	-rm -f /usr/local/man/man8/microapl.8
@@ -36,6 +37,8 @@ install: micro_evtd
 	#
 	# Transfer controller script
 	-cp Install/microapl /usr/local/sbin/.
+	# Ensure all users can run this
+	-chmod a+x /etc/init.d/micro_evtd
 
 	#
 	# ENSURE LOCAL DIRECTORY EXISTS

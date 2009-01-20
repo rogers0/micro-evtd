@@ -58,9 +58,12 @@ over_heat() {
 	if [ "$1" -eq 0 ]; then
 	  micro_evtd -s 02540100
 	elif [ "$1" -eq 1 ]; then
+	  ## Push full speed in-case of dud temperature reading
+	  micro_evtd -s 013303
+	elif [ "$1" -eq 3 ]; then
 	  logger -p user.emerg -i 'Overheat detected'
-	  ## Indicate error and push to full speed
-	  micro_evtd -s 02540112,013303
+	  ## Indicate error
+	  micro_evtd -s 02540112
 	elif [ "$1" -gt 15 ]; then
 	  shutdown -h -P now "Due to overheat"
 	fi

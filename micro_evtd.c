@@ -1,7 +1,7 @@
 /*
 * Linkstation/Kuro/Terastation ARM series Micro daemon
 * 
-* Written by Bob Perry (2008) lb-source@users.sourceforge.net
+* Written by Bob Perry (2009) lb-source@users.sourceforge.net
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
 * You should have received a copy of the GNU General Public License
 * along with this program; if not, write to the Free Software
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-*
 */
 
 #include <sys/types.h>
@@ -169,7 +168,7 @@ static void validate_time(time_t ltime);
 */	
 static int execute_command(char cmd, char cmd2, char type)
 {
-	return execute_command2(cmd, ".", type, type, cmd2);
+	return execute_command2(cmd, ".", type, cmd2, 0);
 }
 
 /**
@@ -531,11 +530,7 @@ static void fan_set_speed(char cSpeed)
 */	
 static int fan_get_rpm(void)
 {
-#ifdef TS
-	return writeUART(2, (unsigned char*)"\x080\x038") * 15;
-#else
 	return writeUART(2, (unsigned char*)"\x080\x038") * 30;
-#endif
 }
 
 /**
@@ -841,7 +836,7 @@ static void micro_evtd_main(void)
 			// Get system temp
 			iTmp = temp_get();
 			// Check for over-heat
-			if (iTemp > iTempRange[3]) {
+			if (iTmp > iTempRange[3]) {
 				// Increment number of over-heat events
 				iOverTemp++;
 				// Keep a close eye on this
@@ -1124,8 +1119,7 @@ static void parse_configuration(char* buff)
 		pOff = poffTimer = (TIMER*)calloc(sizeof(TIMER), sizeof(char));
 
 		// To prevent looping
-		for (i=0;i<100;i++)
-		{
+		for (i=0;i<100;i++) {
 			cmd = -1;
 			bTime = 0;
 

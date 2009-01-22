@@ -86,8 +86,7 @@ Macro event object definition
 */
 typedef struct _OFF_TIMER
 {
-	char day;	///< Event day
-	long time;	///< Event time (24hr)
+	long time;	///< Event time (week minutes)
 	void* pointer;	///< Pointer to next event
 } TIMER;
 
@@ -145,8 +144,7 @@ static int execute_command(char, char, char);
 static int temp_get(void);
 static void open_gpio(void);
 static void GetTime(long, TIMER*, long*);
-static char FindNextToday(long, TIMER*, long*);
-static char FindNextDay(int, long, TIMER*, long*, long*);
+static char FindNextDay(long, TIMER*, long*);
 static void destroyObject(TIMER*);
 static void validate_time(time_t ltime);
 
@@ -666,7 +664,8 @@ static void check_shutdown(time_t tt_LastTimerEventPing)
 			/* Large clock drift, either user set time or an ntp update, handle accordingly. */
 			if (abs(l_check) > 60 || tm.tm_isdst != s_dst) {
 				s_dst = tm.tm_isdst;
-				validate_time(ltime);
+				/* Need to re-validate time as we may have changed dates */
+				check_configuration(1);
 			}
 
 			/* Not skipping and less than 5 mins to go? */
@@ -1008,33 +1007,39 @@ static void micro_evtd_main(void)
 *						int					= minutes
 *						int					= first day grouping
 *						int					= current day this applies too
-*						int					= flag indicating a group
 *					  
 *  returns     : 		TIMER*				= new timer object for this group
 *
 ************************************************************************
 */
-static TIMER* populateObject(TIMER* pTimer, int iHour, int iMinutes, int iFirstDay, int iProcessDay, int iGroup)
+static TIMER* populateObject(TIMER* pTimer, int iHour, int iMinutes, int iFirstDay, int iProcessDay)
 {
 	/* Ensure time entry is valid */
 	if ((iHour>=0 && iHour <=48) && (iMinutes >=0 && iMinutes <= 120)) {
 		/* Group macro so create the other events */
-		if (iGroup!=0) {
-			int j = iFirstDay-1;
+		if (iFirstDay) {
+			/* 0-6 index */
+			int j = iFirstDay-2;
 			/* Create the multiple entries for each day in range specified */
 			while (j!=iProcessDay) {
 				j++;
 				if (j>7) j = 0;
-				pTimer->day = (char)j;
-				pTimer->time = (iHour*60)+iMinutes;
+				/* Scale time accordingl */
+				pTimer->time = (iHour*60) + iMinutes + (j*TWENTYFOURHR);
+#if TEST
+				printf("Group %d - %d\n", j, pTimer->time);
+#endif
 				/* Allocate space for the next event object */
 				pTimer->pointer = (void*)calloc(sizeof(TIMER), sizeof(char));
 				pTimer = pTimer->pointer;
 			}
 		}
 		else {
-			pTimer->day = iProcessDay;
-			pTimer->time = (iHour*60)+iMinutes;
+			/* Scale time accordingly */
+			pTimer->time = (iHour*60) + iMinutes + (iProcessDay*TWENTYFOURHR);
+#if TEST
+			printf("Single %d - %d\n", iProcessDay, pTimer->time);
+#endif
 			/* Allocate space for the next event object */
 			pTimer->pointer = (void*)calloc(sizeof(TIMER), sizeof(char));
 			pTimer = pTimer->pointer;
@@ -1102,8 +1107,8 @@ static void parse_configuration(char* buff)
 
 	decode_time = localtime(&ltime);
 	s_dst = decode_time->tm_isdst;
-	current_time = (decode_time->tm_hour*60) + decode_time->tm_min;
 	last_day = decode_time->tm_wday;
+	current_time = (decode_time->tm_hour*60) + decode_time->tm_min;
 #ifdef TEST
 	if (override_time) {
 		ltime -= (current_time-override_time)*60;
@@ -1128,6 +1133,7 @@ static void parse_configuration(char* buff)
 				/* Could return groups, say MON-THR, need to strip '-' out */
 				if ('-' == pos[3]) {
 					*(last-1)=(char)'='; /* Plug the '0' with token parameter  */
+					ilastGroup = 0;
 					iGroup = 1;
 					last-=8;
 					pos = strtok_r(NULL, "-", &last);
@@ -1237,7 +1243,7 @@ process:
 						iMinutes+=iFixer - ((int)(iFixer/60))*60;
 					}
 
-					TIMER* pTime = populateObject(pTimer, iHour, iMinutes, iFirstDay, iProcessDay, iGroup);
+					TIMER* pTime = populateObject(pTimer, iHour, iMinutes, iFirstDay, (iProcessDay-1));
 					
 					/* Update our pointers */
 					if (cmd == 8) pOn =  pTime;
@@ -1261,18 +1267,19 @@ process:
 				case 14:
 				case 15:
 				case 16:
+					/* New start, reset group start */
+					if (!ilastGroup && iFirstDay)
+						iFirstDay = 0;
+					
 					/* For groups, */
-					iProcessDay = cmd-10;
+					iProcessDay = cmd-9;
 					/* Remove grouping flag for next defintion */
-					ilastGroup += iGroup;
-					if  (ilastGroup>2) {
-						iGroup = 0;
-						ilastGroup = 0;
-					}
-
-					if (1 == ilastGroup)
+					if (1 == iGroup)
 						iFirstDay = iProcessDay;
-
+	
+					/* snapshot group */
+					ilastGroup = iGroup;
+					iGroup = 0;
 					break;
 				case 17:
 					iButtonAction = 0;
@@ -1287,6 +1294,11 @@ process:
 	if (iProcessDay >= 0 && 0 == i_instandby) {
 		c_TimerFlag = 1;
 		iOffTime = iOnTime = 0;
+		/* Correct time scale for lookup */
+		current_time += last_day * TWENTYFOURHR;
+#ifdef TEST
+		printf("Search off timer\n");
+#endif
 		GetTime(current_time, poffTimer, &iOffTime);
 		// Skip? Yes then plug on time event for message output
 		if (c_Skip) {
@@ -1295,8 +1307,12 @@ process:
 				iOnTime = 1;
 		}
 		// No, get next on time event
-		else
+		else {
+#ifdef TEST
+			printf("Search on timer\n");
+#endif
 			GetTime(iOffTime, ponTimer, &iOnTime);
+		}
 
 		// Determine shutdown times
 		validate_time(ltime);
@@ -1326,7 +1342,6 @@ process:
 static void validate_time(time_t ltime)
 {
 	char message[80];
-	char twelve = 0;
 	time_t tworktime;
 	struct tm* decode_time;
 	long current_time;
@@ -1335,16 +1350,11 @@ static void validate_time(time_t ltime)
 
 	decode_time = localtime(&ltime);
 	last_day = decode_time->tm_wday;
-	current_time = (decode_time->tm_hour*60) + decode_time->tm_min;
+	/* Correct time scale for time calculations */
+	current_time = (decode_time->tm_hour*60) + decode_time->tm_min + last_day * TWENTYFOURHR;
 
 	/* Time shutdown so check dates, otherwise it is an interval only */
-	if (iOffTime < current_time) {
-		twelve = 1;
-		offTime = ((TWELVEHR + (iOffTime - (current_time - TWELVEHR))) * 60);
-	}
-	else {
-		offTime = ((iOffTime - current_time) * 60);
-	}
+	offTime = ((iOffTime - current_time) * 60);
 		
 	tworktime = ltime + offTime;
 	decode_time = localtime(&tworktime);
@@ -1356,20 +1366,7 @@ static void validate_time(time_t ltime)
 	if (iOnTime > 0) {
 		// are not skipping a current standby event?
 		if (!c_Skip) {
-			if (iOnTime < current_time) {
-				onTime = ((TWELVEHR + (iOnTime - (current_time - TWELVEHR))) * 60);
-			}
-			else {
-				onTime = (iOnTime - current_time) * 60;
-				if (twelve) {
-					onTime += (TWENTYFOURHR*60);
-				}
-			}
-
-			// See if a longer sleep period
-			if (onTime < offTime) {
-				onTime += (TWENTYFOURHR*60);
-			}
+			onTime = (iOnTime - current_time) * 60;
 			
 			// Record time
 			tOnLastTime = tworktime = ltime + onTime;
@@ -1390,6 +1387,7 @@ static void validate_time(time_t ltime)
 #ifdef TEST		
 	printf("%s\n", message);
 #endif
+
 	l_TimerEvent = offTime;
 
 	// Update the pending timer system flag if we need too
@@ -1633,12 +1631,10 @@ int main(int argc, char *argv[])
 */
 static void destroyObject(TIMER* pTimer)
 {
-	/* Destroy this object by free-ing up the memory we grabbed through calloc */
-	TIMER* pObj;
-
 	/* Ensure valid pointer */
 	if (pTimer) {
-		/* Let's destroy and free our objects */
+		TIMER* pObj;
+		/* Destroy this object by free-ing up the memory we grabbed through calloc */
 		for (pObj = pTimer->pointer;NULL != pObj;pObj = pTimer->pointer) {
 			if (pObj != NULL) {
 				free (pTimer);
@@ -1654,10 +1650,10 @@ static void destroyObject(TIMER* pTimer)
 /**
 ************************************************************************
 *
-*  function    : FindNextToday()
+*  function    : FindNextDay()
 *
-*  description : Find the next valid time object from the 'timeNow' for
-*				 the current day.
+*  description : Find the next valid time object from the 'timeNow' from
+*				 the current day that is the earliest available time.
 *
 *  arguments   : (in)	long				= time to scan against
 *						TIMER*				= pointer to timer object
@@ -1668,71 +1664,29 @@ static void destroyObject(TIMER* pTimer)
 *
 ************************************************************************
 */
-static char FindNextToday(long timeNow, TIMER* pTimer, long* time)
-{
-	/* Scan macro objects for a valid event from 'time' today */
-	char iLocated = 0;
-
-	while(pTimer != NULL && pTimer->pointer != NULL) {
-		if (pTimer->day == last_day && pTimer->time > timeNow) {
-			/* See if we have a time specified before this first located time */
-			if (iLocated) {
-				if (*time > pTimer->time) {
-					*time = pTimer->time;
-				}
-			}
-			else {
-				/* Next event for today?, at least 1 minute past current */
-				iLocated++;
-				*time = pTimer->time;
-			}
-		}
-			
-		pTimer = pTimer->pointer;
-	}
-
-	return iLocated;
-}
-
-/**
-************************************************************************
-*
-*  function    : FindNextDay()
-*
-*  description : Find the next valid time object from the 'timeNow' from
-*				 the current day that is the earliest available time.
-*
-*  arguments   : (in)	int					= current day (SUN=0...SAT=6)
-*						long				= time to scan against
-*						TIMER*				= pointer to timer object
-*						long*				= pointer to located time
-*						long*				= pointer to day differance (seconds)
-*					  
-*  returns     : 		char				= located valid time entry
-*											  flag, 0=NO, 1=YES
-*
-************************************************************************
-*/
-static char FindNextDay(int iDay, long timeNow, TIMER* pTimer, long* time, long* offset)
+static char FindNextDay(long timeNow, TIMER* pTimer, long* time)
 {
 	/* Locate the next valid event */
 	char iLocated = 0;
-	int iLocatedDay = iDay;
 	while(pTimer != NULL && pTimer->pointer != NULL) {
 		/* Next event for tomorrow onwards? */
-		if (pTimer->day > iDay) {
+		if (pTimer->time > timeNow) {
 			// Located, get any earlier time/day
 			if (iLocated) {
-				if (pTimer->day < iLocatedDay && *time > pTimer->time) {
+				if (*time > pTimer->time) {
 					*time = pTimer->time;
-					iLocatedDay = pTimer->day;
+#ifdef TEST
+					printf("locate update %d\n", *time);
+#endif
 				}
 			}
 			// Record this time and date
 			else {
 				iLocated++;
 				*time = pTimer->time;
-				iLocatedDay = pTimer->day;
+#ifdef TEST
+				printf("located %d\n", *time);
+#endif
 			}
 		}
 
@@ -1740,12 +1694,14 @@ static char FindNextDay(int iDay, long timeNow, TIMER* pTimer, long* time, long*
 	}
 	
 	/* Grouped events?, ie only tomorrow */
-	if (iLocatedDay && iDay >= 0) {
-		*offset = (iLocatedDay - iDay) * TWENTYFOURHR;
-	}
-	else {
-		*offset = ((6 - last_day) + iLocatedDay) * TWENTYFOURHR;
-		*offset += TWENTYFOURHR;
+	if (iLocated) {
+		if (timeNow < 0) {
+			/* Week wrap, adjust time to suit */
+			*time += (1 + last_day) * TWENTYFOURHR;
+#ifdef TEST
+			printf("Time adjusted %d\n", *time);
+#endif
+		}
 	}
 
 	return iLocated;
@@ -1767,29 +1723,17 @@ static char FindNextDay(int iDay, long timeNow, TIMER* pTimer, long* time, long*
 */
 static void GetTime(long timeNow, TIMER* pTimerLocate, long* time)
 {
-	/* Get next timed macro event */
-	long lOffset=0;
-	char onLocated=0;
-	TIMER* pTimer;
-
 	/* Ensure that macro timer object is valid */
 	if (pTimerLocate && pTimerLocate->pointer != NULL) {
-		pTimer = pTimerLocate;
-		/* Next event for today */
-		onLocated = FindNextToday(timeNow, pTimer, time);
+		char onLocated=0;
+		TIMER* pTimer = pTimerLocate;
+		/* Locate the next available time */
+		onLocated = FindNextDay(timeNow, pTimer, time);
 
-		/* Failed to find a time for today, look for the next power-up time */
+		/* Nothing for week this week so wrap to next search */
 		if (0 == onLocated) {
 			pTimer = pTimerLocate;
-			onLocated = FindNextDay(last_day, timeNow, pTimer, time, &lOffset);
+			onLocated = FindNextDay(-1, pTimer, time);
 		}
-
-		/* Nothing for week-end, look at start */
-		if (0 == onLocated) {
-			pTimer = pTimerLocate;
-			onLocated = FindNextDay(-1, timeNow, pTimer, time, &lOffset);
-		}
-
-		*time += lOffset;
 	}
 }

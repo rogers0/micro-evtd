@@ -125,11 +125,11 @@ message() {
 
 standby() {
 	case "$1" in
-	  0) echo "Waking from standby" ; stop ;;
-	  1) logger -p user.emerg 'Shutting down for standby'
+	  0) logger -p user.emerg 'Shutting down for standby'
 	     micro_evtd -q -s 02520100
 	     mv -f /boot/pending_standby /boot/standby
 	     sync ; reboot ;;
+	  1) echo "Waking from standby" ; stop ;;
 	  2) rm -f /boot/standby
 	     echo -n "$2" > /boot/pending_standby ;; 
 	esac

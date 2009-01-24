@@ -1316,14 +1316,14 @@ process:
 
 		// Determine shutdown times
 		validate_time(ltime);
-
-		/* Destroy the macro timer objects */
-		destroyObject(poffTimer);
-		destroyObject(ponTimer);
 	}
 	// Ensure button action is correct if no standby mode
 	else
 		iButtonAction = 0;
+
+	/* Destroy the macro timer objects */
+	destroyObject(poffTimer);
+	destroyObject(ponTimer);
 }
 
 /**

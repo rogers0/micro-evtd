@@ -870,13 +870,14 @@ static void micro_evtd_main(void)
 			else
 				iCurrent_speed = 1;
 
-			// Alert user to temp and fan speed info on change only
-			if (iTmp != iTemp || iFan_speed != FAN_SPEED_RPM) {
+			// Alert user to temp and fan speed info on change only.  Ignore
+			// fan rpm variations of +/- lsb so as to reduce status updates
+			if (iTmp != iTemp || abs(iFan_speed - FAN_SPEED_RPM) > 60) {
 				iUpdate++;
+				iFan_speed = FAN_SPEED_RPM;
 			}
 				
 			iTemp = iTmp;
-			iFan_speed = FAN_SPEED_RPM;
 			
 			// See if we need to control the fan speed?
 			if (iControlFan && 0 == iOverTemp) {

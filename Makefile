@@ -4,7 +4,7 @@ CC ?=gcc
 INSTPATH=/usr/local/sbin
 CFLAGS=-Wall -s -Os -o
 
-all: micro_evtd install
+all: micro_evtd
 
 static: micro_evtd.c version.h
 	# Static build for the initrd/stock systems
@@ -22,8 +22,8 @@ maintainer-test: micro_evtd.c version.h
 	
 clean: micro_evtd
 	-rm -f /etc/init.d/micro_evtd
-	-rm -f /etc/default/micro_evtd
-	-rm -f /etc/micro_evtd/EventScript
+	-rm -f /etc/micro_evtd/micro_evtd.conf
+	-rm -f /etc/micro_evtd/micro_evtd.event
 	-rm -f $(INSTPATH)/micro_evtd
 	-rm -f $(INSTPATH)/microapl
 	-rm -f /usr/local/man/man8/micro_evtd.8

@@ -126,6 +126,7 @@ int s_dst = 0; // Daylight saving flag
   long override_time=0;
 #endif
 char c_Skip = 0;
+char c_bScheduleBreak = 0;
 int iButtonAction = 0; ///< Defines type of button action, 0=OFF, 128=STANDBY
 int iButtonHeld = 0;
 time_t tOnLastTime = 999;
@@ -648,10 +649,16 @@ static void getResourceLock(void)
 */
 static void check_shutdown(time_t tt_LastTimerEventPing)
 {
-	time_t ltime;
-	
 	// shutdown timer event?
 	if(1 == c_TimerFlag) {
+		time_t ltime;
+		char cCheckConfig = 0;
+		
+		// Monitor break time for required standby renew
+		if (c_bScheduleBreak && ltime > tOnLastTime) {
+			c_bScheduleBreak = 0;
+			cCheckConfig = 1;
+		}
 
 		// Decrement our powerdown timer
 		if (l_TimerEvent > 0) {
@@ -665,22 +672,27 @@ static void check_shutdown(time_t tt_LastTimerEventPing)
 			if (abs(l_check) > 60 || tm.tm_isdst != s_dst) {
 				s_dst = tm.tm_isdst;
 				/* Need to re-validate time as we may have changed dates */
-				check_configuration(1);
+				cCheckConfig = 1;
 			}
 
 			/* Not skipping and less than 5 mins to go? */
-			if (!c_Skip && l_TimerEvent < FIVE_MINUTES) {
-				if (c_FirstTimeFlag) {
+			else if (l_TimerEvent < FIVE_MINUTES) {
+				if (!c_Skip && c_FirstTimeFlag) {
 					validate_time(ltime);
 					execute_command(WARNING, i_instandby, CALL_NO_WAIT);
 					c_FirstTimeFlag = 0;
+				}
+
+				else if (c_Skip && !c_FirstTimeFlag) {
+					execute_command(WARNING, 99, CALL_NO_WAIT);
+					c_FirstTimeFlag = 1;
 				}
 			}
 		}
 
 		/* User demanded next time? */
 		else if (c_Skip) {
-			check_configuration(1);
+			c_FirstTimeFlag = cCheckConfig = 1;
 			c_Skip = 0;
 		}
 
@@ -688,6 +700,11 @@ static void check_shutdown(time_t tt_LastTimerEventPing)
 			// Prevent re-entry and execute command
 			c_TimerFlag = 2;
 			execute_command(TIMED_STANDBY, i_instandby, CALL_WAIT);
+		}
+
+		// Force configuration update required?
+		if (cCheckConfig) {
+			check_configuration(cCheckConfig);
 		}
 	}
 }
@@ -873,7 +890,7 @@ static void micro_evtd_main(void)
 			// Alert user to temp and fan speed info on change only.  Ignore
 			// fan rpm variations of +/- lsb so as to reduce status updates
 			if (iTmp != iTemp || abs(iFan_speed - FAN_SPEED_RPM) > 60) {
-				iUpdate++;
+				iUpdate = 1;
 				iFan_speed = FAN_SPEED_RPM;
 			}
 				
@@ -910,7 +927,7 @@ static void micro_evtd_main(void)
 				
 				// Check if we had requested a speed-up request from stopped
 				if (changeSpeed > 1 && 1 == iCurrent_speed) {
-					iUpdate++;
+					iUpdate = 1;
 					// Check often on change to ensure it happens
 					dooze = 2;
 					// Start incrementing our fan failure count
@@ -984,7 +1001,7 @@ static void micro_evtd_main(void)
 		
 		// Do we need to update my_status?
 		if (iUpdate) {
-			char str[32];
+			char str[5];
 			sprintf(str, "%d", iFanStops);
 			execute_command2(INFO, str, CALL_NO_WAIT, iTemp, iFan_speed);
 			iUpdate = 0;
@@ -1290,7 +1307,7 @@ process:
 			}
 		}
 	}
-	
+
 	// Handle standby and wakeup timer
 	if (iProcessDay >= 0 && 0 == i_instandby) {
 		c_TimerFlag = 1;
@@ -1312,7 +1329,10 @@ process:
 #ifdef TEST
 			printf("Search on timer\n");
 #endif
-			GetTime(iOffTime, ponTimer, &iOnTime);
+			GetTime(current_time, ponTimer, &iOnTime);
+			if (iOffTime > iOnTime) {
+				c_bScheduleBreak = 1;
+			}
 		}
 
 		// Determine shutdown times

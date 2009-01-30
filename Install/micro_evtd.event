@@ -120,6 +120,8 @@ message() {
 	  0) logger -p user.emerg 'Entering standby in less than 5 minutes'
 	     micro_evtd -s 02540F00 ;;
 	  1) echo "Leaving standby in less than 5 minutes" ;;
+	 99) logger -p user.emerg 'Skipping current standby point'
+	     micro_evtd -s 02540000 ;;
 	esac
 }
 

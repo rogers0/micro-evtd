@@ -13,6 +13,7 @@
 # S - Standby state machine
 # T - Display remaining time if standby enabled
 # P - Dump pid
+# L - Look for process
 #
 # NOTE:
 # shutdown calls will operate on stock system but will ignore parameters
@@ -40,13 +41,15 @@ fi
 fan_fault() {
 	## Determine fan failure message and event
 	case $1 in
-	  0) logger -p user.emerg 'Fan failure detected' ; micro_evtd -s 02540011 ;;
+	  0) logger -p user.emerg 'Fan failure detected' ; micro_evtd -s 013303 02540011 ;;
 	  1) logger -p user.emerg 'Fan failure recovered' ; micro_evtd -s 02540000 ;;
 	  2) micro_evtd -s 02540012 ; shutdown -h now "Due to fan failure"
 	esac 
 }
 
 create_script() {
+	## Ensure path does not exist
+	rm -r -f $TMP/micro_evtd.event
 	## Create RAM version of control file
 	cp -a /etc/micro_evtd/micro_evtd.event $TMP/.
 	## Stop flashing LEDs and clear error codes
@@ -85,6 +88,11 @@ stop() {
 	  echo "scsi add-single-device 0 0 0 0" > /proc/scsi/scsi
 	  ## Make sure we are clean
 	  kill -9 -1
+	  ## Inform of wake up
+	  echo "[AWAKE] `date`" >> /boot/boot.log
+	  ## Clear mounts
+	  umount /proc
+	  umount -a
 	else
 	  ## Flashy light thing
 	  micro_evtd -q -s 02520100
@@ -101,7 +109,7 @@ button() {
 	      1)  stop ;;
 	      8)  /usr/local/bin/initsw.sh ;;
 	      16) /usr/local/bin/ups_shutdown.sh ;;
-	      65) ## Long power button press
+	      65) ## Long power button press so force EM
 	          rm -f /boot/hddrootmode
 	          reboot ;;
 	     129) standby 1 ;;
@@ -132,7 +140,8 @@ standby() {
 	     mv -f /boot/pending_standby /boot/standby
 	     sync ; reboot ;;
 	  1) echo "Waking from standby" ; stop ;;
-	  2) rm -f /boot/standby
+	  2) rm -f /boot/pending_standby
+	     rm -f /boot/standby
 	     echo -n "$2" > /boot/pending_standby ;; 
 	esac
 }
@@ -155,6 +164,14 @@ pid() {
 	echo "$1" > /var/run/micro_evtd.pid
 }
 
+look() {
+	CODE=`ps -e | grep -w "$1"`
+	if [ -n "${CODE}" ]; then
+	  exit 2
+	fi
+	exit 0
+}
+
 case "$1" in
 	4)	fan_fault $2 ;;
 	C)	create_script ;;
@@ -165,5 +182,6 @@ case "$1" in
 	S)	standby $2 $3 ;;
 	T)	timer $2 $3 ;;
 	P)	pid $3 ;;
+	L)  look $4 ;;
 esac
 exit 0

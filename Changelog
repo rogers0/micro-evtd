@@ -1,3 +1,31 @@
+2009-02-18  Bob Perry (lb-source@users.sourceforge.net)
+
+	* version.h (VERSION):3.3
+
+	* micro_evtd.c: Corrections to standby skip routine.  Some corrections
+	  to event calls.  Rearranged the button code to support Terastation
+	  via calls to micron.  Some changes to prevent invalid temperature
+	  readings.  Further fixes to this and the micon message handling.
+	  Improvements to the parser and further code extraction for easier
+	  updating.  Other corrections to the ON/OFF event system as this did
+	  not correctly obey user entry.  Changes to status update process
+	  to reduce file update.  Added feature to turn this off.  Added
+	  missing TREND keyword.
+
+	* Install/micro_evtd.event: Changed parameter usage.  Also some changes
+	  to the standby order.  Added some extra button events to support other
+	  button modes of operation.  Changes to the overheat detection so
+	  suprious replies do not trigger events.
+
+	* Install/micro_evtd.event.8: Updated the man page to include event
+	  script updates.
+
+	* Install/micro_evtd.conf.5: Updated the man page to include changes.
+
+	* Makefile: Changes to the install process.  Addition of a maintainer
+	  option for testing data dump.  Corrected file flags and also added
+	  proper file removal.
+
 2008-11-08  Bob Perry (lb-source@users.sourceforge.net)
 
 	* version.h (VERSION):3.2.5

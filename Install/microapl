@@ -60,33 +60,49 @@ parse()
 		shutdown_cancel)
 			$MICRO_q 000D ;;
 		skip_standby)
-			PID=`pidof micro_evtd`
-			/bin/kill -SIGINT ${PID}
-			echo "Pending standby delay activated" ;;
+			if [ -f /boot/pending_standby ] ; then
+			  PID=`pidof micro_evtd`
+			  /bin/kill -SIGINT ${PID}
+			  echo "Pending standby delay activated"
+			else
+			  echo "Not supported function"
+			fi ;;
 		delay_standby)
-			PID=`pidof micro_evtd`
-			COUNT=1
-			## Delay amount?
-			if [ "$2" != "" ] ; then
-			  ## We only do 5 mins intervals
-			  ((COUNT=($2+4)/5))
-			fi
-			LOOP=0
-			DELAY=0
-			while [ ${LOOP} -lt ${COUNT} ] ; do
-			  ((DELAY +=5))
-			  ((LOOP ++))
-			  /bin/kill -SIGCONT ${PID}
-			  LC=0 ; while [ ${LC} -lt 50 ] ;do ((LC ++)) ; done
-			done
-			echo "Standby delayed by additional ${DELAY} minutes" ;;
+			if [ -f /boot/pending_standby ] ; then
+			  PID=`pidof micro_evtd`
+			  COUNT=1
+			  ## Delay amount?
+			  if [ "$2" != "" ] ; then
+			    ## We only do 5 mins intervals
+			    ((COUNT=($2+4)/5))
+			  fi
+			  LOOP=0
+			  DELAY=0
+			  while [ ${LOOP} -lt ${COUNT} ] ; do
+			    ((DELAY +=5))
+			    ((LOOP ++))
+			    /bin/kill -SIGCONT ${PID}
+			    LC=0 ; while [ ${LC} -lt 50 ] ;do ((LC ++)) ; done
+			  done
+			  echo "Standby delayed by additional ${DELAY} minutes"
+			else
+			  echo "Not supported function"
+			fi ;;
 		standby_remaining)
-			PID=`pidof micro_evtd`
-			/bin/kill -SIGHUP ${PID} ;;
+			if [ -f /boot/pending_standby ] ; then
+			  PID=`pidof micro_evtd`
+			  /bin/kill -SIGHUP ${PID}
+			else
+			  echo "Not supported function"
+			fi ;;
 		standby)
-			micro_evtd -q -s 02520100
-		    mv -f /boot/pending_standby /boot/standby
-			reboot ;;
+			if [ -f /boot/pending_standby ] ; then
+			  micro_evtd -q -s 02520100
+		      mv -f /boot/pending_standby /boot/standby
+			  reboot
+			else
+			  echo "Not supported function"
+			fi ;;
 		reboot)
 			$MICRO_q 000E ;;
 		system_get_mode)

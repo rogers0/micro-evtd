@@ -59,6 +59,7 @@
 #define WARNING             	'W'
 #define TIMER_INFO		'T'
 #define CREATE_PID		'P'
+#define PROCESS_CHECK	'L'
 
 #define FAN_SEIZE_TIME		30
 #define ENTER_EM_TIME        4
@@ -66,6 +67,11 @@
 #define CALL_NO_WAIT         0
 #define CALL_WAIT			 1
 
+#ifdef TS
+#define MICON               (1<<8)
+#else
+#define MICON               (1<<2)
+#endif
 #define GPP_DATA_OUT_REG	64
 #define GPP_DATA_OUT_EN_REG	65
 #define GPP_BLINK_EN_REG	66
@@ -84,8 +90,8 @@
 /**
 Macro event object definition
 */
-typedef struct _OFF_TIMER
-{
+typedef struct _OFF_TIMER {
+	char oneShot; ///< This week only entry
 	long time;	///< Event time (week minutes)
 	void* pointer;	///< Pointer to next event
 } TIMER;
@@ -95,19 +101,20 @@ const char strVersion[]="Micro-monitor daemon Version";
 const char micro_device[]="/dev/ttyS1";
 const char micro_conf[]="/etc/micro_evtd/micro_evtd.conf";
 const char micro_lock[]="/var/lock/micro_evtd";
+const char strokTest[] = ",=\n";
 TIMER* poffTimer=NULL;
 TIMER* ponTimer=NULL;
+char* pDelayProcesses = NULL;
 int last_day;
 char i_debug=0;
 int iTempRange[4]={30, 37, 40, 60};
 int fanFaultSeize=30;
-int iControlFan=1;
-time_t tt_LastMicroAcess = 999;
+char iControlFan=1;
 int refreshRate=40;
-int iHysteresis=2;
+char iHysteresis=2;
 char i_Use_Trend=1;
 char log_path[20]="/var/log";
-int iDebugLevel=0;
+char iDebugLevel=0;
 char strTmpPath[20]="/tmp";
 int i_FileDescriptor = 0;
 int i_Poll = 0;
@@ -131,23 +138,28 @@ int iButtonAction = 0; ///< Defines type of button action, 0=OFF, 128=STANDBY
 int iButtonHeld = 0;
 time_t tOnLastTime = 999;
 char alt = 1; ///< Provides control for alternating sound on held button
-long iOffTime = 0;
-long iOnTime = 0;
+long iOffTime = 0; ///< In units of week seconds
+time_t tActualOffTime = 0;
+long iOnTime = 0; ///< In units of week seconds
+char c_DemandedEvent = 0;
+char c_UpdateStatus = 1;
+long time_at_start = -1;
 
 static void open_serial(void);
 static int writeUART(int, unsigned char*);
-static void check_configuration(char);
+static void check_configuration(void);
 static void fan_set_speed(char);
 static void micro_evtd_main(void);
-static void parse_configuration(char*);
+static void parse_configuration(void);
 static int execute_command2(char, char*, char, char, long);
 static int execute_command(char, char, char);
-static int temp_get(void);
+static char temp_get(void);
 static void open_gpio(void);
 static void GetTime(long, TIMER*, long*);
 static char FindNextDay(long, TIMER*, long*);
 static void destroyObject(TIMER*);
-static void validate_time(time_t ltime);
+static void validate_time(time_t);
+static char DelayedStandby(long);
 
 /**
 ************************************************************************
@@ -226,7 +238,7 @@ static void open_serial(void)
 */	
 static void open_gpio(void)
 {
-#ifndef TS
+#ifndef NO_GPIO
 	off_t target = 0xF1010100;
 	// Grab memory resource
 	m_fd = open("/dev/mem", O_RDWR | O_SYNC);
@@ -235,17 +247,14 @@ static void open_gpio(void)
 		gpio = (unsigned long*)mmap(NULL, MAP_MASK, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, (target & ~MAP_MASK));
 		// Our GPIO pointer valid?
 		if (gpio >0) {
-			// Ensure GPIO mode setup correctly
-			if ((gpio[GPP_DATA_OUT_EN_REG] & 0xD) != 0xD)
-				gpio[GPP_DATA_OUT_EN_REG] |= 0xD;	// Read modified write
-			/* MICON detect bit please */
-			gpio[GPP_DATA_IN_POL_REG] = 4;
-			/* Clear MICON interrupt BIT */
-			gpio[GPP_INT_CAUSE_REG] &= ~0x4;
+			// MICON detect bit please
+			gpio[GPP_DATA_IN_POL_REG] |= MICON;
+			// Clear MICON interrupt BIT
+			gpio[GPP_INT_CAUSE_REG] &= ~MICON;
 		}
 	}
 #else
-#warning "TS Build supports button events via serial control"
+#warning "Button events via serial control"
 #endif
 }
 
@@ -286,6 +295,10 @@ static void close_serial(void)
 	// Remove it mutex if we have one
 	if (mutexId >0)
 		semctl(mutexId, 0, IPC_RMID, arg);
+
+	// Free memory
+	if (pDelayProcesses)
+		free(pDelayProcesses);
 }
 
 /**
@@ -310,6 +323,8 @@ static void reset(void)
 	for (i=0;i<2;i++) {
 		read(i_FileDescriptor, buf, sizeof(buf));
 	}
+	
+	usleep(500);
 }
 
 /**
@@ -327,24 +342,23 @@ static void reset(void)
 static void termination_handler(int signum)
 {
 	switch (signum) {
-	case SIGTERM:
-		close_serial();
-		exit(0);
-		break;
-	/* Signalled shutdown delay */
-	case SIGCONT:
-		l_TimerEvent += FIVE_MINUTES;
-		/* Reset warning flag */
-		c_FirstTimeFlag = 1;
-	case SIGHUP:
-		execute_command2(TIMER_INFO, ".", CALL_NO_WAIT, s_dst, l_TimerEvent/60);
-		break;
-	/* Signalled skip this shutdown time */
-	case SIGINT:
-		c_Skip = 1;
-		break;
-	default:
-		break;
+		case SIGTERM:
+			close_serial();
+			exit(0);
+			break;
+		/* Signalled shutdown delay */
+		case SIGCONT:
+			l_TimerEvent += FIVE_MINUTES;
+			/* Reset warning flag */
+			c_FirstTimeFlag = 1;
+		case SIGHUP:
+			execute_command2(TIMER_INFO, ".", CALL_NO_WAIT, s_dst, l_TimerEvent/60);
+			break;
+		/* Signalled skip this shutdown time */
+		case SIGINT:
+			c_Skip = 1;
+		default:
+			break;
 	}
 }
 
@@ -397,31 +411,36 @@ static int writeUART(int n, unsigned char* output)
 	/* Handle ALL UART messages from a central point, reduce code
 	 * overhead */
 	unsigned char icksum = 0;
-	unsigned char rbuf[32] = {0,};
-	char retries = 1;
+	unsigned char rbuf[32];
+	unsigned char tbuf[32];
+	char retries = 2;
 	int i;
-	int len = 0;
 	fd_set fReadFS;
 	struct timeval tt_TimeoutPoll;
-	int iResult;
 	int iReturn = -1;
+	int iResult;
+
+	/* We got data to send? */
+	if (n >0) {
+		/* Calculate the checksum and populate the output buffer */
+		for (i=0;i<n;i++) {
+			icksum -= tbuf[i] = output[i];
+		}
+
+		tbuf[n] = icksum;
+	}
 
 	lockMutex(1);
-	
+
 	do {
+		int len = -1;
+
+		/* We got data to send? */
 		if (n >0) {
-			icksum = 0;
-			/* Calculate the checksum */
-			for (i=0; i<n; i++) {
-				icksum -= output[i];
-				/* Send data  */
-				write(i_FileDescriptor, &output[i], 1);
-				// Give micro time to process
-				usleep(400);
-			}
-			
-			/* Send  checksum */
-			write(i_FileDescriptor, &icksum, 1);
+			/* Send data */
+			iResult = write(i_FileDescriptor, tbuf, n+1);
+			if (iResult < n+1)
+				goto again;
 		} 
 
 		tt_TimeoutPoll.tv_usec = 500000;
@@ -430,21 +449,26 @@ static int writeUART(int n, unsigned char* output)
 		FD_ZERO(&fReadFS);
 		FD_SET(i_FileDescriptor, &fReadFS);
 
+		/* Wait for a max of 500ms for write response */
 		iResult = select(i_FileDescriptor + 1, &fReadFS, NULL, NULL, &tt_TimeoutPoll);
-		
+		/* We did not time-out or error? No, then get data*/
 		if (iResult !=0) {
 			/* Ignore data errors */
 			len = read(i_FileDescriptor, rbuf, sizeof(rbuf));
 		}
 		
+		/* Too little data? Yes, its an error */
 		if (len < 4) {
+again:
 			reset();
 		}
+
+		/* We received some data */
 		else if (len>0) {
 			// Calculate data sum for validation
 			icksum = 0;
 			for (i=0;i<len;i++)
-				icksum = icksum-rbuf[i];
+				icksum -= rbuf[i];
 			
 			// Process if data valid
 			if (0 == icksum){
@@ -455,13 +479,14 @@ static int writeUART(int n, unsigned char* output)
 				}
 			}
 				
-		    if (0 == n) {
-			    iReturn = (int)rbuf[2];
+			if (0 == n) {
+				iReturn = (int)rbuf[2];
 				if (len-3 > 1) {
 					for (i=0;i<len-4;i++)
 						printf("%d ", rbuf[2+i]);
 					iReturn = (int)rbuf[2+len-4];
 				}
+
 				goto exit;
 			}
 		}
@@ -482,14 +507,13 @@ exit:
 *
 *  arguments   : (in)	void
 *					  
-*  returns     : 		int					= actual temperature
+*  returns     : 		char				= actual temperature
 ************************************************************************
 */	
-static int temp_get(void)
+static char temp_get(void)
 {
-	int iTemp = writeUART(2, (unsigned char*)"\x080\x037");
-	// Ensure within range
-	return ((iTemp & 0x80) != 0 ? 0 : iTemp);
+	char iTemp = writeUART(2, (unsigned char*)"\x080\x037");
+	return iTemp;
 }
 
 /**
@@ -636,6 +660,67 @@ static void getResourceLock(void)
 /**
 ************************************************************************
 *
+*  function    : DelayedStandby()
+*
+*  description : Searches the list of processes to see which one may still
+*				 be loaded.  If a process is found, then the standby event
+*				 is delayed.  If this delay extends past the next standby
+*				 recover event then this event is removed.
+*
+*  arguments   : (in)	time_t				= time we last ran
+*					  
+*  returns     : 		char				= 0 failed, 1 located process
+*
+************************************************************************
+*/
+static char DelayedStandby(long ltime)
+{
+	char cResult = 0;
+	/* Do we need to check for running processes? */
+	if (pDelayProcesses) {
+		char cLocated = 0;
+		/* Inquire of our process list */
+		char* last;
+		char* pos = strtok_r(pDelayProcesses, strokTest, &last);
+		while (pos) {
+			/* Located this process? */
+			if (512 == execute_command2(PROCESS_CHECK, pos, CALL_WAIT, 0, 0))
+				cLocated = 1;
+			
+			*(last-1) = ',';
+			/* Get next name, user must ensure it is correct */
+			pos = strtok_r(NULL, strokTest, &last);
+		}
+		
+		/* Found a process we were looking for? */
+		if (cLocated) {
+			/* Have we passed the current expected standby time? */
+			if (tActualOffTime < ltime) {
+				/* Get next standby time */
+				parse_configuration();
+				/* Now set standby delayed flag */
+				c_DemandedEvent = 1;
+			}
+
+			/* Set re-check time to next five minutes */
+			l_TimerEvent = FIVE_MINUTES;
+		}
+
+		if (iOnTime >= 0) {
+			/* Have we passed the next on event? Yes, then clear delay */
+			if (c_DemandedEvent && ltime > (tOnLastTime - FIVE_MINUTES)) {
+				c_DemandedEvent = 0;
+				cResult = 1;
+			}
+		}
+	}
+	
+	return cResult;
+}
+
+/**
+************************************************************************
+*
 *  function    : check_shutdown()
 *
 *  description : If standby is enabled, then we check and act on the
@@ -653,9 +738,10 @@ static void check_shutdown(time_t tt_LastTimerEventPing)
 	if(1 == c_TimerFlag) {
 		time_t ltime;
 		char cCheckConfig = 0;
-		
-		// Monitor break time for required standby renew
-		if (c_bScheduleBreak && ltime > tOnLastTime) {
+
+		/* Monitor break time for required standby renew but
+		   only action if we not waiting to enter standby */
+		if (!c_DemandedEvent && c_bScheduleBreak && ltime > tOnLastTime) {
 			c_bScheduleBreak = 0;
 			cCheckConfig = 1;
 		}
@@ -675,14 +761,17 @@ static void check_shutdown(time_t tt_LastTimerEventPing)
 				cCheckConfig = 1;
 			}
 
-			/* Not skipping and less than 5 mins to go? */
-			else if (l_TimerEvent < FIVE_MINUTES) {
-				if (!c_Skip && c_FirstTimeFlag) {
-					validate_time(ltime);
-					execute_command(WARNING, i_instandby, CALL_NO_WAIT);
-					c_FirstTimeFlag = 0;
+			/* Less than 5 mins to go? */
+			if (l_TimerEvent < FIVE_MINUTES) {
+				/* Skip activated? No, then process */
+				if (!c_Skip) {
+					if(c_FirstTimeFlag) {
+						validate_time(ltime);
+						execute_command(WARNING, i_instandby, CALL_NO_WAIT);
+						c_FirstTimeFlag = 0;
+					}
 				}
-
+				
 				else if (c_Skip && !c_FirstTimeFlag) {
 					execute_command(WARNING, 99, CALL_NO_WAIT);
 					c_FirstTimeFlag = 1;
@@ -693,18 +782,24 @@ static void check_shutdown(time_t tt_LastTimerEventPing)
 		/* User demanded next time? */
 		else if (c_Skip) {
 			c_FirstTimeFlag = cCheckConfig = 1;
-			c_Skip = 0;
+			c_DemandedEvent = c_Skip = 0;
 		}
 
+		/* We ran out of time then */
 		else {
-			// Prevent re-entry and execute command
-			c_TimerFlag = 2;
-			execute_command(TIMED_STANDBY, i_instandby, CALL_WAIT);
+			/* Check for delayed standby */
+			cCheckConfig = DelayedStandby(ltime);
+			/* Nothing found to prevent standby? No, proceed */
+			if (l_TimerEvent <= 0) {
+				// Prevent re-entry and execute command
+				c_TimerFlag = 2;
+				execute_command(TIMED_STANDBY, i_instandby, CALL_WAIT);
+			}
 		}
 
 		// Force configuration update required?
 		if (cCheckConfig) {
-			check_configuration(cCheckConfig);
+			parse_configuration();
 		}
 	}
 }
@@ -727,9 +822,9 @@ static void gpio_button_press(void)
 	// Check to see if we have a GPIO interupt, takes 4 seconds to latch (must be a timer here somewhere?)
 	if (gpio>0) {
 		/* Check both interrupt and PIN; if we run without GPIO IRQ then we can capture it quicker here. */
-		if ((gpio[GPP_INT_CAUSE_REG] & 0x04) != 0 || (gpio[GPP_DATA_IN_REG] & 0x04) != 0) {
+		if ((gpio[GPP_INT_CAUSE_REG] & MICON) != 0 || (gpio[GPP_DATA_IN_REG] & MICON) != 0) {
 			/* Clear cause of interrupt */
-			gpio[GPP_INT_CAUSE_REG] &= ~0x4;
+			gpio[GPP_INT_CAUSE_REG] &= ~MICON;
 			alt = iButtonHeld = 1;
 		}
 	}
@@ -783,6 +878,199 @@ static void gpio_button_press(void)
 }
 
 #define FAN_SPEED_RPM iResult
+/**
+************************************************************************
+*
+*  function    : check_status()
+*
+*  description : We check the temp and fan actions here.
+*
+*  arguments   : (in)	void
+*					  
+*  returns     : 		int					= demanded refresh time
+*
+************************************************************************
+*/
+static int check_status(void)
+{
+	static char iLastTemp = 0;
+	static int iFan_speed = 0;
+	static char iOverTemp = 0;
+	static char iBoost = 1;
+	static char iFanStops = 0;
+	static char iFan_failure = 0;
+	static char changeSpeed = 0;
+	static float fTrend_temp = -1;
+	static char iTemp = 0;
+
+	int iResult;
+	int dooze = 2;
+	char iTmp;
+	
+	
+	// See if our configuration file has changed?
+	check_configuration();
+
+	if (refreshRate > 0) {
+		// Do some watch-dog refreshing (250 seconds)
+		system_set_watchdog(250);
+	}
+
+	// Get system temp
+	iTmp = temp_get();
+	// Keep sane
+	if (iTmp < 0) iTmp = iTemp;
+
+	// Check for over-heat
+	if (iTmp > iTempRange[3]) {
+		// Increment number of over-heat events
+		iOverTemp++;
+		// Keep a close eye on this
+		dooze = 2;
+		// Inform script
+		execute_command(OVER_HEAT, iOverTemp, CALL_WAIT);
+	}
+
+	// Reset over-temp count
+	else {
+		if ( iOverTemp > 0) {
+			execute_command(OVER_HEAT, 0, CALL_WAIT);
+			// Clear overheat timer
+			iOverTemp = 0;
+		}
+
+		// Reset our sleep
+		dooze = (refreshRate > 0 ? refreshRate : fanFaultSeize);
+	}
+
+	if (!iOverTemp) {
+		char iCurrent_speed = 1;
+		char iCmd;
+		char iUpdate = 0;
+
+		// Determine if the fan is already running
+		FAN_SPEED_RPM = fan_get_rpm();
+
+		// Determine current fan speed
+		if (FAN_SPEED_RPM > 0) {
+			iCurrent_speed = 3;
+			// Slow speed  ~1740rpm
+			if (FAN_SPEED_RPM < 1950)
+				iCurrent_speed = 2;
+			// Full speed ~ 3000rpm
+			else if (FAN_SPEED_RPM > 2900)
+				iCurrent_speed = 4;
+		}
+
+		// Alert user to temp and fan speed info on change only.  Ignore
+		// fan rpm variations of +/- lsb so as to reduce status updates
+		// and ignore speed up/down requests.
+		if (iTmp != iTemp || 
+		   ((abs(iFan_speed - FAN_SPEED_RPM) > 60) && !changeSpeed)) {
+			iUpdate = c_UpdateStatus;
+			iFan_speed = FAN_SPEED_RPM;
+		}
+			
+		iTemp = iTmp;
+		
+		// See if we need to control the fan speed?
+		if (iControlFan && 0 == iOverTemp) {
+			float fTempCheck = (float)iTemp;
+			// Use the trend as the fan monitor?
+			if (i_Use_Trend) {
+				// Seed the trend
+				if (fTrend_temp <0)
+					fTrend_temp = (float)iTemp;
+				// calculate the temp trend, based on simple averaging filter
+				fTempCheck = ((float)iTemp + fTrend_temp)/2.0f;
+				fTrend_temp = fTempCheck;
+			}
+
+			iTmp = 0;
+			// Add some hysteresis around desired temp switching
+			if (iLastTemp > fTempCheck)
+				iTmp = -iHysteresis;
+
+			// Determine the desired fan speed based on returned box temp.
+			if (fTempCheck <= (iTempRange[0]) + iTmp) iCmd = 2;
+			else if (fTempCheck > (iTempRange[2])) iCmd = 5;
+			else if (fTempCheck > (iTempRange[1])) iCmd = 4;
+			else iCmd = 3;
+
+			if (iControlFan > 1) iCmd = ((iCmd > iControlFan) ? iCmd : iControlFan);
+			iCmd--;
+			
+			// Check if we had requested a speed-up request from stopped
+			if (changeSpeed > 1 && 1 == iCurrent_speed) {
+				// Check often on change to ensure it happens
+				dooze = 2;
+				// Start incrementing our fan failure count
+				iFan_failure++;
+				// Can take a while to speed-up
+				if (iCurrent_speed < changeSpeed && iFan_failure > 10) {
+					// 1st fan failure?
+					if (11 == iFan_failure) {
+						iFanStops++;
+						execute_command(FAN_FAULT, 0, CALL_NO_WAIT);
+					}
+					// Fan still failed after our stalled timer?
+					else if (iFan_failure > fanFaultSeize/2) {
+						execute_command(FAN_FAULT, 2, CALL_WAIT);
+					}
+				}
+			}
+			else {
+				// Recovered from fan failure message
+				if (iFan_failure > 11)
+					execute_command(FAN_FAULT, 1, CALL_WAIT);
+
+				// Reset our snooze time
+				if (iCmd == iCurrent_speed) {
+					// Re-issue fan speed request
+					if (changeSpeed) {
+						fan_set_speed(iCmd);
+						// Clear fan speed request flag
+						changeSpeed = 0;
+					}
+				}
+
+				// Clear fault  flag
+				iFan_failure = 0;
+
+				// Clear boost as demanded RPMs have been reached
+				if (2 == iBoost)
+					iBoost = 0;
+			}
+
+			// Fan speed up request?
+			if (iCmd != iCurrent_speed) {
+				// Ensure we check the fan update
+				dooze = 2;
+				// Set the flag and boost speed
+				changeSpeed = iCmd;
+				// On first switch on, go full power to over come any dirt/dust spin-up issues
+				if (1 == iCurrent_speed && iCmd > 1) {
+					if (iBoost) {
+						iBoost = 2;
+						dooze = iCmd = 4;
+					}
+				}
+				
+				fan_set_speed(iCmd);
+			    iLastTemp = fTempCheck - iTmp;
+			}
+		}
+
+		// Do we need to update my_status?
+		if (iUpdate) {
+			char str[5];
+			sprintf(str, "%d", iFanStops);
+			execute_command2(INFO, str, CALL_NO_WAIT, iTemp, iFan_speed);
+		}
+	}
+	
+	return dooze;
+}
 
 /**
 ************************************************************************
@@ -799,28 +1087,10 @@ static void gpio_button_press(void)
 */
 static void micro_evtd_main(void)
 {
-	char iBoost=1;
-	int iLastTemp=0;
-	int iFan_speed=0;
-	int iTemp=0;
-	int dooze=2;
-	int iOverTemp=0;
-	char iFanStops=0;
-	int iResult;
-	char iCount = 20;
-	char iFan_failure=0;
-	char iCmd=0;
-	char iCurrent_speed=0;
-	char changeSpeed=0;
-	float fTrend_temp=-1;
-	time_t tt_LastTimerEventPing;
-	struct timespec sysSleep;
-	int iTmp;
-	float fTempCheck;
-	char iUpdate=0;
-
+	int dooze = 8;
+	char iCount = 0;
 	// Reset the clock
-	tt_LastTimerEventPing = time(NULL);
+	time_t tt_LastTimerEventPing = time(NULL);
 	// Do watch-dog disable
 	system_set_watchdog(255); // 0 will kill it dead
 	// do boot_end here
@@ -829,183 +1099,24 @@ static void micro_evtd_main(void)
 	open_gpio();
 
 	while (i_FileDescriptor) {
+		struct timespec sysSleep;
 		// Set the sleep but speed up on button press
 		sysSleep.tv_sec = (iLastSwitch != 0) ? 0 : 2;
 		sysSleep.tv_nsec = (iLastSwitch != 0) ? 500000000 : 0;
-		
 		nanosleep(&sysSleep, NULL);
-		
-		iCount+=2;
+		iCount+= 2;
 		
 		// Get button press event
 		gpio_button_press();
 		
-		/* Poll the system status? */
+		// Poll the system status?
 		if (iCount >= dooze && !iButtonHeld && (2 != c_TimerFlag)) {
 			iCount = 0;
-			// See if our configuration file has changed?
-			check_configuration(0);
-			if (refreshRate > 0) {
-				// Do some watch-dog refreshing (250 seconds)
-				system_set_watchdog(250);
-			}
-			// Get system temp
-			iTmp = temp_get();
-			// Check for over-heat
-			if (iTmp > iTempRange[3]) {
-				// Increment number of over-heat events
-				iOverTemp++;
-				// Keep a close eye on this
-				dooze = 2;
-				// Inform script
-				execute_command(OVER_HEAT, iOverTemp, CALL_WAIT);
-			}
-			// Reset over-temp count
-			else {
-				if ( iOverTemp > 0) {
-					execute_command(OVER_HEAT, 0, CALL_WAIT);
-					// Clear overheat timer
-					iOverTemp = 0;
-				}
-			}
-
-			// Determine if the fan is already running
-			FAN_SPEED_RPM = fan_get_rpm();
-
-			// Determine current fan speed
-			if (FAN_SPEED_RPM > 0) {
-				iCurrent_speed = 3;
-				// Slow speed  ~1740rpm
-				if (FAN_SPEED_RPM < 1950)
-					iCurrent_speed = 2;
-				// Full speed ~ 3000rpm
-				else if (FAN_SPEED_RPM > 2900)
-					iCurrent_speed = 4;
-			}
-			
-			// Must be stopped
-			else
-				iCurrent_speed = 1;
-
-			// Alert user to temp and fan speed info on change only.  Ignore
-			// fan rpm variations of +/- lsb so as to reduce status updates
-			if (iTmp != iTemp || abs(iFan_speed - FAN_SPEED_RPM) > 60) {
-				iUpdate = 1;
-				iFan_speed = FAN_SPEED_RPM;
-			}
-				
-			iTemp = iTmp;
-			
-			// See if we need to control the fan speed?
-			if (iControlFan && 0 == iOverTemp) {
-				// Use the trend as the fan monitor?
-				if (i_Use_Trend) {
-					// Seed the trend
-					if (fTrend_temp <0)
-						fTrend_temp = (float)iTemp;
-					// calculate the temp trend, based on simple averaging filter
-					fTempCheck = ((float)iTemp + fTrend_temp)/2.0f;
-					fTrend_temp = fTempCheck;
-				}
-				// Use actual sampled temp.
-				else
-					fTempCheck = (float)iTemp;
-
-				iTmp = 0;
-				// Add some hysteresis around desired temp switching
-				if (iLastTemp > iTemp)
-					iTmp = -iHysteresis;
-
-				// Determine the desired fan speed based on returned box temp.
-				if (fTempCheck <= (iTempRange[0]) + iTmp) iCmd = 2;
-				else if (fTempCheck > (iTempRange[2])) iCmd = 5;
-				else if (fTempCheck > (iTempRange[1])) iCmd = 4;
-				else iCmd = 3;
-
-				if (iControlFan > 1) iCmd = ((iCmd > iControlFan) ? iCmd : iControlFan);
-				iCmd--;
-				
-				// Check if we had requested a speed-up request from stopped
-				if (changeSpeed > 1 && 1 == iCurrent_speed) {
-					iUpdate = 1;
-					// Check often on change to ensure it happens
-					dooze = 2;
-					// Start incrementing our fan failure count
-					iFan_failure++;
-					// Can take a while to speed-up
-					if (iCurrent_speed < changeSpeed && iFan_failure > 10) {
-						// 1st fan failure?
-						if (11 == iFan_failure) {
-							iFanStops++;
-							// Boost fan speed if jammed
-							fan_set_speed(3);
-							execute_command(FAN_FAULT, 0, CALL_NO_WAIT);
-						}
-						// Fan still failed after our stalled timer?
-						else if (iFan_failure > fanFaultSeize/2) {
-							execute_command(FAN_FAULT, 2, CALL_WAIT);
-						}
-					}
-				}
-				else {
-					// Recovered from fan failure message
-					if (iFan_failure > 11)
-						execute_command(FAN_FAULT, 1, CALL_WAIT);
-
-					// Reset our snooze time
-					if (iCmd == iCurrent_speed) {
-						// Re-issue fan speed request
-						if (changeSpeed) {
-							fan_set_speed(iCmd);
-							// Clear fan speed request flag
-							changeSpeed = 0;
-						}
-						// Back to normal refresh rate
-						dooze = (refreshRate > 0 ? refreshRate : fanFaultSeize);
-					}
-
-					// Clear fault  flag
-					iFan_failure = 0;
-
-					// Clear boost as demanded RPMs have been reached
-					if (2 == iBoost)
-						iBoost = 0;
-				}
-
-				// Fan speed up request?
-				if (iCmd != iCurrent_speed) {
-					// Ensure we check the fan update
-					dooze = 2;
-					// Set the flag and boost speed
-					changeSpeed = iCmd;
-					// On first switch on, go full power for two seconds to over come any dirt/dust spin-up issues
-					if (1 == iCurrent_speed && iCmd > 1) {
-						if (iBoost) {
-							iBoost = 2;
-							iCmd = 4;
-						}
-					}
-					
-					fan_set_speed(iCmd);
-					iLastTemp = fTempCheck + (float)(-iTmp);
-				}
-			}
-			// Are we in overheat?
-			else if (0 == iOverTemp)
-				// Back to normal refresh rate
-				dooze = (refreshRate > 0 ? refreshRate : fanFaultSeize);
+			dooze = check_status();
 		}
-
+		
 		// Check our remaining time
 		check_shutdown(tt_LastTimerEventPing);
-		
-		// Do we need to update my_status?
-		if (iUpdate) {
-			char str[5];
-			sprintf(str, "%d", iFanStops);
-			execute_command2(INFO, str, CALL_NO_WAIT, iTemp, iFan_speed);
-			iUpdate = 0;
-		}
 		
 		// Keep track of shutdown time remaining
 		tt_LastTimerEventPing = time(NULL);
@@ -1021,47 +1132,43 @@ static void micro_evtd_main(void)
 *
 *  arguments   : (in)	TIMER*				= pointer to configuration file
 *											  contents
-*						int					= hour
-*						int					= minutes
-*						int					= first day grouping
-*						int					= current day this applies too
+*						int					= time in minutes
+*						char				= first day grouping
+*						char				= current day this applies too
 *					  
 *  returns     : 		TIMER*				= new timer object for this group
 *
 ************************************************************************
 */
-static TIMER* populateObject(TIMER* pTimer, int iHour, int iMinutes, int iFirstDay, int iProcessDay)
+static TIMER* populateObject(TIMER* pTimer, int iTime, char iFirstDay, char iProcessDay)
 {
-	/* Ensure time entry is valid */
-	if ((iHour>=0 && iHour <=48) && (iMinutes >=0 && iMinutes <= 120)) {
-		/* Group macro so create the other events */
-		if (iFirstDay) {
-			/* 0-6 index */
-			int j = iFirstDay-2;
-			/* Create the multiple entries for each day in range specified */
-			while (j!=iProcessDay) {
-				j++;
-				if (j>7) j = 0;
-				/* Scale time accordingl */
-				pTimer->time = (iHour*60) + iMinutes + (j*TWENTYFOURHR);
+	/* Group macro so create the other events */
+	if (iFirstDay) {
+		/* 0-6 index */
+		int j = iFirstDay-2;
+		/* Create the multiple entries for each day in range specified */
+		while (j!=iProcessDay) {
+			j++;
+			if (j>7) j = 0;
+			/* Scale time accordingl */
+			pTimer->time = iTime + (j*TWENTYFOURHR);
 #if TEST
-				printf("Group %d - %d\n", j, pTimer->time);
-#endif
-				/* Allocate space for the next event object */
-				pTimer->pointer = (void*)calloc(sizeof(TIMER), sizeof(char));
-				pTimer = pTimer->pointer;
-			}
-		}
-		else {
-			/* Scale time accordingly */
-			pTimer->time = (iHour*60) + iMinutes + (iProcessDay*TWENTYFOURHR);
-#if TEST
-			printf("Single %d - %d\n", iProcessDay, pTimer->time);
+			printf("Group %d - %d\n", j, pTimer->time);
 #endif
 			/* Allocate space for the next event object */
 			pTimer->pointer = (void*)calloc(sizeof(TIMER), sizeof(char));
 			pTimer = pTimer->pointer;
 		}
+	}
+	else {
+		/* Scale time accordingly */
+		pTimer->time = iTime + (iProcessDay*TWENTYFOURHR);
+#if TEST
+		printf("Single %d - %d\n", iProcessDay, pTimer->time);
+#endif
+		/* Allocate space for the next event object */
+		pTimer->pointer = (void*)calloc(sizeof(TIMER), sizeof(char));
+		pTimer = pTimer->pointer;
 	}
 
 	// Return the pointer
@@ -1078,16 +1185,15 @@ static TIMER* populateObject(TIMER* pTimer, int iHour, int iMinutes, int iFirstD
 *				 this daemon is to retain a small memory foot-print, only
 *				 simple checks are made on retrieved values.
 *
-*  arguments   : (in)	char*				= pointer to configuration file
-*											  contents
+*  arguments   : (in)	void
 *					  
 *  returns     : 		void
 *
 ************************************************************************
 */
-static void parse_configuration(char* buff)
+static void parse_configuration(void)
 {
-	const char *command[] = {
+	 const char *command[] = {
 			"REFRESH",
 			"FANSTOP",
 			"TEMP-RANGE",
@@ -1096,16 +1202,16 @@ static void parse_configuration(char* buff)
 			"DEBUG",
 			"LOG",
 			"TMP",
+			"BUTTON",
+			"DELAY-STANDBY",
+			"TREND",
 			"ON",
 			"OFF",
-			"SUN", "MON", "TUE", "WED", "THR", "FRI", "SAT",
-			"BUTTON"
+			"SUN", "MON", "TUE", "WED", "THR", "FRI", "SAT"
 			};
-	int i;
 	int cmd;
 	char bTime=1; /* Specifies time format */
 	char* pos;
-	char* last; // Used by strtoc_r to point to current token
 	long current_time;
 	time_t ltime;
 	struct tm* decode_time;
@@ -1119,6 +1225,12 @@ static void parse_configuration(char* buff)
 	TIMER* pOff;
 	TIMER* pOn;
 	long iFixer=0;
+	FILE* file = fopen(micro_conf, "r");
+
+	if (pDelayProcesses)
+		free(pDelayProcesses);
+
+	pDelayProcesses = 0;
 
 	// Get time of day
 	time(&ltime);
@@ -1133,191 +1245,223 @@ static void parse_configuration(char* buff)
 		current_time = override_time;
 	}
 #endif
-	if (buff) {
-		// Parse our time requests
-		pos = strtok_r(buff, ",=\n", &last);
+	// Establish time at start up
+	if (time_at_start < 0)
+		time_at_start = current_time + (last_day * TWENTYFOURHR);
 
+	if (file) {
 		/* Now create our timer objects for on and off events */
 		pOn = ponTimer = (TIMER*)calloc(sizeof(TIMER), sizeof(char));
 		pOff = poffTimer = (TIMER*)calloc(sizeof(TIMER), sizeof(char));
-
-		// To prevent looping
-		for (i=0;i<100;i++) {
-			cmd = -1;
-			bTime = 0;
-
+		
+		char buff[80];
+		char bOnTime = 0;
+		// Grab a line from the configuration file
+		while (fgets(buff, 80, file) != NULL) {
 			// Ignore comment lines?
-			if ('#' != pos[0]) {
-				/* Could return groups, say MON-THR, need to strip '-' out */
-				if ('-' == pos[3]) {
-					*(last-1)=(char)'='; /* Plug the '0' with token parameter  */
-					ilastGroup = 0;
-					iGroup = 1;
-					last-=8;
-					pos = strtok_r(NULL, "-", &last);
-				}
+			if ('#' != buff[0]) {
+				char* last; // Used by strtoc_r to point to current token
+				pos = strtok_r(buff, strokTest, &last);
+				bTime = 0;
+				// Process content of line
+				while (pos) {
+					cmd = -1;
 
-				/* Could use a '>' character in the time format */
-				else if ('>' == pos[3]) {
-					bTime = 1;
-					*(last-1)=(char)'=';
-					last-=10;
-					pos = strtok_r(NULL, ">", &last);
-				}
-
-				// Locate our expected commands
-				for(cmd=0;cmd<18;cmd++)
-					if (strcasecmp(pos, command[cmd]) == 0) break;
-					
-				pos = strtok_r(NULL, ",=\n", &last);
-			}
-			else {
-				pos = strtok_r(NULL, "\n", &last);
-
-				if (pos) {
-					/* After the first remark we have ignored, make sure we detect a valid line
-					and move the tokeniser pointer if none remark field */
-					if ('#' != pos[0]) {
-						int j = strlen(pos);
+					/* Could return groups, say MON-THR, need to strip '-' out */
+					if ('-' == pos[3]) {
 						*(last-1)=(char)'='; /* Plug the '0' with token parameter  */
-						last=last-(j+1);
-
-						/* Now lets tokenise this valid line */
-						pos = strtok_r(NULL, ",=\n", &last);
+						ilastGroup = 0;
+						iGroup = 1;
+						last-=8;
+						pos = strtok_r(NULL, "-", &last);
 					}
-				}
-			}
 
-			if (!pos)
-				break;
+					/* Could use a '>' character in the time format */
+					else if ('>' == pos[3]) {
+						bTime = 1;
+						*(last-1)=(char)'=';
+						last-=10;
+						pos = strtok_r(NULL, ">", &last);
+					}
 
-			if ('#' == pos[0]) cmd = -1;
+					// Locate our expected commands
+					for(cmd=0;cmd<20;cmd++)
+						if (strcasecmp(pos, command[cmd]) == 0) break;
+					
+					pos = strtok_r(NULL, strokTest, &last);
 
-			int iTemp = atoi(pos);
+					if (!pos)
+						break;
+
+					int iTemp = atoi(pos);
 			
-			// Now parse the setting
-			// Excuse the goto coding, not nice but necessary here
-			switch (cmd) {
-				// Refresh/re-scan time?
-				case 0: 
-					if (strcasecmp(pos, "OFF") == 0) {
-						refreshRate = -1;
-						// Ensure that the watchdog is turned off, may have been on before
-						system_set_watchdog(255);
-					}
+					// Now parse the setting
+					// Excuse the goto coding, not nice but necessary here
+					switch (cmd) {
+						// Refresh/re-scan time?
+						case 0:
+							if (strcasecmp(pos, "OFF") == 0) {
+								refreshRate = -1;
+								// Ensure that the watchdog is turned off, may have been on before
+								system_set_watchdog(255);
+							}
 
-					else
-						sscanf(pos, "%02d", &refreshRate);
+							else
+								refreshRate = iTemp;
 
-					break;
-				// Fan failure stop time before event trigger
-				case 1:
-					fanFaultSeize = iTemp;
-					// Limit to something sensible
-					if (fanFaultSeize > 60) fanFaultSeize = 60;
-					else if (fanFaultSeize < 1) fanFaultSeize = 1;
-					else fanFaultSeize = FAN_SEIZE_TIME;
-					break;
-				// Get control details
-				case 2:
-					sscanf(pos, "%02d %02d %02d %02d", &iTempRange[0], &iTempRange[1], &iTempRange[2], &iTempRange[3]);
-					break;
-				// See if to control fan or not?
-				case 3:
-					// Default ON
-					iControlFan = 1;
-					// No monitoring?
-					if (strcasecmp(pos, "OFF") == 0)
-						iControlFan = 0;
-					// Demanded minimum speed?
-					else if (iTemp > 0)
-						iControlFan = iTemp + 1;
-					break;
-				case 4:
-					iHysteresis = iTemp;
-				    // Limit swing
-				    if (iHysteresis < 1) iHysteresis = 1;
-				    else if (iHysteresis > 5) iHysteresis = 5;
-				    break;
-				// Get debug settings, do not bother checking level data
-				case 5:
-					iDebugLevel = iTemp;
-					break;
-				// Pickup user's log path, no directory checking occurs
-				case 6:
-					sprintf( log_path, "%s", pos);
-					break;
-				// Get the tmp/RAM path name, no checking occurs
-				case 7:
-					sprintf( strTmpPath, "%s", pos);
-					break;
-				// Get on time
-				case 8:
-					pTimer = pOn; iHour = iMinutes = 0;
+							if ((pos = strtok_r(NULL, ",\n", &last))) {
+								if (strcasecmp(pos, "OFF") == 0)
+									c_UpdateStatus = 0;
+							}
+							
+							break;
+						// Fan failure stop time before event trigger
+						case 1:
+							fanFaultSeize = iTemp;
+							// Limit to something sensible
+							if (fanFaultSeize > 60) fanFaultSeize = 60;
+							else if (fanFaultSeize < 1) fanFaultSeize = 1;
+							else fanFaultSeize = FAN_SEIZE_TIME;
+							break;
+						// Get control details
+						case 2:
+							sscanf(pos, "%02d %02d %02d %02d", &iTempRange[0], &iTempRange[1], &iTempRange[2], &iTempRange[3]);
+							break;
+						// See if to control fan or not?
+						case 3:
+							// Default ON
+							iControlFan = 1;
+							// No monitoring?
+							if (strcasecmp(pos, "OFF") == 0)
+								iControlFan = 0;
+							// Demanded minimum speed?
+							else if (iTemp > 0)
+								iControlFan = iTemp + 1;
+							break;
+						case 4:
+							iHysteresis = iTemp;
+						    // Limit swing
+						    if (iHysteresis < 0) iHysteresis = 0;
+						    else if (iHysteresis > 5) iHysteresis = 5;
+						    break;
+						// Get debug settings, do not bother checking level data
+						case 5:
+							iDebugLevel = iTemp;
+							break;
+						// Pickup user's log path, no directory checking occurs
+						case 6:
+							sprintf( log_path, "%s", pos);
+							break;
+						// Get the tmp/RAM path name, no checking occurs
+						case 7:
+							// Ensure we can not overflow this buffer
+							if (strlen(pos) < 20)
+								sprintf( strTmpPath, "%s", pos);
+							break;
+						// Get button action demand
+						case 8:
+							iButtonAction = 0;
+							if (strcasecmp(pos, "STANDBY") == 0)
+								iButtonAction = 128;
+							break;
+						// User list of processes to delay standby evet
+						case 9: {
+								*(last-1) = (char)',';
+								int iSize = strlen(pos);
+								pDelayProcesses = calloc(1, iSize);
+								memcpy(pDelayProcesses, pos, iSize);
+							}
+							break;
+						// Use trend checking
+						case 10:
+							if (strcasecmp(pos, "NO") == 0)
+								i_Use_Trend = 0;
+							break;
+						// Get on time
+						case 11:
+							pTimer = pOn; iHour = iMinutes = 0;
+							bOnTime = 1;
 process:
-					sscanf(pos, "%02d:%02d", &iHour, &iMinutes);
-					if (bTime) {
-						iHour+=(int)(iFixer/60);
-						iMinutes+=iFixer - ((int)(iFixer/60))*60;
+							sscanf(pos, "%02d:%02d", &iHour, &iMinutes);
+							if (bTime) {
+								iHour+=(int)(iFixer/60);
+								iMinutes+=iFixer - ((int)(iFixer/60))*60;
+							}
+
+							TIMER* pTime;
+							int iTime = ((iHour*60) + iMinutes);
+							char cStart = iFirstDay;
+							char cEnd = (iProcessDay-1);
+							if (1 == bTime) {
+								pOff->oneShot = 1;
+								cStart = cEnd = 0;
+							}
+
+							pTime = populateObject(pTimer, iTime, cStart, cEnd);
+							
+							/* Update our pointers */
+							if (11 == cmd) pOn =  pTime;
+							else pOff =  pTime;
+							break;
+						// Get on time
+						case 12:
+							/* De-reference start */
+							iFixer = time_at_start;
+							/* This relies on correct association of ON/OFF times */
+							if (bOnTime) {
+								iFixer = iHour*60 + iMinutes;
+								if (bTime) bTime = 2;
+							}
+
+							pTimer = pOff; iHour = 24; iMinutes = 0;
+							goto process;
+							break;
+						/* Macro days in week? */
+						case 13:
+						case 14:
+						case 15:
+						case 16:
+						case 17:
+						case 18:
+						case 19:
+							/* New start, reset group start */
+							if (!ilastGroup && iFirstDay)
+								iFirstDay = 0;
+							
+							/* For groups, */
+							iProcessDay = cmd-12;
+							/* Remove grouping flag for next defintion */
+							if (1 == iGroup)
+								iFirstDay = iProcessDay;
+			
+							/* snapshot group */
+							ilastGroup = iGroup;
+							iGroup = 0;
+							break;
 					}
-
-					TIMER* pTime = populateObject(pTimer, iHour, iMinutes, iFirstDay, (iProcessDay-1));
 					
-					/* Update our pointers */
-					if (cmd == 8) pOn =  pTime;
-					else pOff =  pTime;
-					break;
-				// Get on time
-				case 9:
-					iFixer = current_time;
-					/* This relies on correct association of ON/OFF times */
-					if (bTime && pOn->pointer)
-						iFixer = iHour*60 + iMinutes;
-
-					pTimer = pOff; iHour = 24; iMinutes = 0;
-					goto process;
-					break;
-				/* Macro days in week? */
-				case 10:
-				case 11:
-				case 12:
-				case 13:
-				case 14:
-				case 15:
-				case 16:
-					/* New start, reset group start */
-					if (!ilastGroup && iFirstDay)
-						iFirstDay = 0;
-					
-					/* For groups, */
-					iProcessDay = cmd-9;
-					/* Remove grouping flag for next defintion */
-					if (1 == iGroup)
-						iFirstDay = iProcessDay;
-	
-					/* snapshot group */
-					ilastGroup = iGroup;
-					iGroup = 0;
-					break;
-				case 17:
-					iButtonAction = 0;
-					if (strcasecmp(pos, "STANDBY") == 0)
-						iButtonAction = 128;
-					break;
+					// Truncate command completion
+					if (cmd  < 11)
+						pos = NULL;
+				}
 			}
 		}
+		
+		// Dump the file pointer for others
+		fclose(file);		
 	}
 
 	// Handle standby and wakeup timer
 	if (iProcessDay >= 0 && 0 == i_instandby) {
-		c_TimerFlag = 1;
-		iOffTime = iOnTime = 0;
+		iOffTime = iOnTime = -1;
 		/* Correct time scale for lookup */
 		current_time += last_day * TWENTYFOURHR;
 #ifdef TEST
 		printf("Search off timer\n");
 #endif
 		GetTime(current_time, poffTimer, &iOffTime);
+		// If no off time then invalidate the standby timer
+		c_TimerFlag = (iOffTime < 0) ? 0 : 1;
 		// Skip? Yes then plug on time event for message output
 		if (c_Skip) {
 			// Did we have a on time event before?  If so, plug the time
@@ -1330,7 +1474,7 @@ process:
 			printf("Search on timer\n");
 #endif
 			GetTime(current_time, ponTimer, &iOnTime);
-			if (iOffTime > iOnTime) {
+			if (iOffTime > iOnTime && iOnTime >= 0) {
 				c_bScheduleBreak = 1;
 			}
 		}
@@ -1362,7 +1506,8 @@ process:
 */
 static void validate_time(time_t ltime)
 {
-	char message[80];
+	char strOff[17];
+	char strOn[12];
 	time_t tworktime;
 	struct tm* decode_time;
 	long current_time;
@@ -1372,19 +1517,31 @@ static void validate_time(time_t ltime)
 	decode_time = localtime(&ltime);
 	last_day = decode_time->tm_wday;
 	/* Correct time scale for time calculations */
-	current_time = (decode_time->tm_hour*60) + decode_time->tm_min + last_day * TWENTYFOURHR;
+	current_time = (decode_time->tm_hour*60) + decode_time->tm_min + (last_day * TWENTYFOURHR);
 
-	/* Time shutdown so check dates, otherwise it is an interval only */
-	offTime = ((iOffTime - current_time) * 60);
+	if (iOffTime < 0) {
+		sprintf(strOff, "to ON only");
+	}
+	else {
+		/* Time shutdown so check dates, otherwise it is an interval only */
+		offTime = ((iOffTime - current_time) * 60);
 		
-	tworktime = ltime + offTime;
-	decode_time = localtime(&tworktime);
+		tActualOffTime = tworktime = ltime + offTime;
+		decode_time = localtime(&tworktime);
 	
-	sprintf(message, "Standby is set with %02d/%02d %02d:%02d",
-		decode_time->tm_mon+1, decode_time->tm_mday, decode_time->tm_hour, decode_time->tm_min);
+		sprintf(strOff, "with %02d/%02d %02d:%02d",
+			decode_time->tm_mon+1, decode_time->tm_mday,
+			decode_time->tm_hour, decode_time->tm_min);
+	}
+
+	/* Inform standby task of no wakeup */
+	if (iOnTime < 0) {
+		tworktime = -1;
+		strOn[0] = 0;
+	}
 
 	// Update the on-time if we have a wake-up event
-	if (iOnTime > 0) {
+	else {
 		// are not skipping a current standby event?
 		if (!c_Skip) {
 			onTime = (iOnTime - current_time) * 60;
@@ -1395,23 +1552,24 @@ static void validate_time(time_t ltime)
 		
 		decode_time = localtime(&tOnLastTime);
 
-		sprintf(message, "%s-%02d/%02d %02d:%02d", message,
-			decode_time->tm_mon+1, decode_time->tm_mday, decode_time->tm_hour, decode_time->tm_min);
+		sprintf(strOn, "%02d/%02d %02d:%02d",
+			decode_time->tm_mon+1, decode_time->tm_mday,
+			decode_time->tm_hour, decode_time->tm_min);
 	}
 
-	/* Inform standby task of no wakeup */
-	else
-		tworktime = -1;
-
-	syslog(LOG_INFO, message);
+	syslog(LOG_INFO, "Standby is set %s %s", strOff, strOn);
 
 #ifdef TEST		
-	printf("%s\n", message);
+	printf("%s %s\n", strOff, strOn);
 #endif
 
-	l_TimerEvent = offTime;
+	/* Do not reset off time during delay cycle event as this
+	   will prevent shutdown when process has been removed */
+	if (!c_DemandedEvent)
+		l_TimerEvent = offTime;
 
-	// Update the pending timer system flag if we need too
+	/* Update the pending timer system flag.  This is not updated
+	   during a skip event so ignore */
 	if (!c_Skip)
 		execute_command2(TIMED_STANDBY, ".", CALL_WAIT, 2, tworktime);
 }
@@ -1430,39 +1588,16 @@ static void validate_time(time_t ltime)
 *  returns     : 		void
 ************************************************************************
 */
-static void check_configuration(char iForce)
+static void check_configuration(void)
 {
-	char buff[4096];
-	int iRead;
-	int errno;
+	static time_t tt_LastMicroAcess = 999;
 	struct stat filestatus;
-	int file;
-	int i;
-
-	errno = stat(micro_conf, &filestatus);
-	
+	int errno = stat(micro_conf, &filestatus);
 	/* If exists? */
 	if (0 == errno) {
-
 		// Has this file changed?
-		if (filestatus.st_mtime != tt_LastMicroAcess || iForce) {
-			file = open(micro_conf, O_RDONLY);
-
-			if (file) {
-				iRead = read(file, &buff, 4095);
-
-				// Dump the file pointer for others
-				close(file);
-
-				if (iRead>0) {
-					/* Remove Windows End-of-Line formatting */
-					for (i=0;i<iRead;i++)
-						if (buff[i] == 0x0D)
-							buff[i] = 0x20;
-							
-					parse_configuration(buff);
-				}
-			}
+		if (filestatus.st_mtime != tt_LastMicroAcess) {
+			parse_configuration();
 		}
 
 		/* Update our lasttimes timer file access */
@@ -1563,7 +1698,7 @@ int main(int argc, char *argv[])
 			// Allocate device
 			open_serial();
 			// Loop through batched commands
-			pos = strtok(*argv, ",");
+			pos = strtok(*argv, ", ");
 			while (pos != 0) {
 				// Get command length
 				iLen = strlen(pos)/2;
@@ -1577,7 +1712,7 @@ int main(int argc, char *argv[])
 				if (iNotQuiet)
 					printf("%d\n", i);
 				// Locate anymore commands?
-				pos = strtok(NULL, ",");
+				pos = strtok(NULL, ", ");
 			};
 				
 			exit(0);
@@ -1602,9 +1737,9 @@ int main(int argc, char *argv[])
 		signal(SIGTSTP, SIG_IGN); /* ignore tty signals */
 		signal(SIGCHLD, SIG_IGN);
 		signal(SIGTERM, termination_handler);
-		signal(SIGINT, termination_handler);
 	}
 
+	signal(SIGINT, termination_handler);
 	signal(SIGHUP, termination_handler);
 	signal(SIGCONT, termination_handler);
 
@@ -1619,7 +1754,7 @@ int main(int argc, char *argv[])
 	
 	// Check configuration and establish the tmp paths
 	i_instandby++;
-	check_configuration(0);
+	check_configuration();
 	i_instandby--;
 
 	// Ensure that our script is copied to RAMDISK first
@@ -1628,8 +1763,8 @@ int main(int argc, char *argv[])
 	/* Create pid file */
 	execute_command2(CREATE_PID, ".", CALL_WAIT, 0, getpid());
 
-	// Force another update to establish standby timers
-	check_configuration(1);
+	//Establish standby timers
+	parse_configuration();
 	
 	// Go do our thing
 	micro_evtd_main();
@@ -1691,7 +1826,9 @@ static char FindNextDay(long timeNow, TIMER* pTimer, long* time)
 	char iLocated = 0;
 	while(pTimer != NULL && pTimer->pointer != NULL) {
 		/* Next event for tomorrow onwards? */
-		if (pTimer->time > timeNow) {
+		if (pTimer->time > timeNow &&
+			/* Ignore any none look back entries beyond this week */
+			!(timeNow < 0 && pTimer->oneShot)) {
 			// Located, get any earlier time/day
 			if (iLocated) {
 				if (*time > pTimer->time) {

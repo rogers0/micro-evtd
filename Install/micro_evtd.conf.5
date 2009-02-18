@@ -1,6 +1,6 @@
 .\" Title: micro_evtd.conf
 .\"Author: Bob Perry
-.TH MICRO_EVTD.CONF 5 "November 2008" "3.3" "Configuration"
+.TH MICRO_EVTD.CONF 5 "February 2009" "3.3" "Configuration"
 .nh
 .ad l
 .SH NAME
@@ -35,27 +35,32 @@ The values 1 through 4 correspond to fan speeds.  This allows the user to set
 a minimum fan speed for the unit:
 
 .RS 15
-.B 1 - STOP
+.B 1\ - STOP
 .RE
 .RS 15
-.B 2 - SLOW
+.B 2\ - SLOW
 .RE
 .RS 15
-.B 3 - FAST
+.B 3\ - FAST
 .RE
 .RS 15
-.B 4 - FULL
+.B 4\ - FULL
 .RE
+.RS 5
 
 Full temperature control and overheat warning still applies when operating in
 this state.
+.RE
 .TP 5
-.IR REFRESH\ [3..100|OFF]
+.IR REFRESH\ [3..100|OFF] [ON|OFF]
 Specifies the refresh cycle time in seconds.  Adjust this if you want to
 reduce the sample frequency of the temperature control.
 
 When set to OFF, the micro's watchdog is disabled and the daemon refresh
 rate is controlled by the fan stop time.
+
+The second parameter, default is ON, allows the user to enable or disable
+the output status \fBmy_status\fR.
 .TP 5
 .IR FANSTOP\ [0..30]
 Specifies the amount of time elapsed for a stalled/stationary fan.  If the
@@ -116,6 +121,15 @@ monday.  This time MUST be specified in UTC format and follow HH:MM.
 Five minutes before power off is required, a message is broadcast to all
 console users.  At shutdown, an event message is sent to the event script.
 .B See micro_evtd.event(8) for more details.
+.RE
+.TP 5
+.IR DELAY_STANDBY \<name>][<name][.....]
+This is a comma seperated list of process names that if present at standby
+will prevent the box from entering the standby state.  The list will be
+polled every five minutes from the off event time.  If all the processes
+are removed before the next event off time then the box will enter standby
+immediately.  If the box is kept up beyond the next power on event then
+this process stops.
 .SH SEE ALSO
 .TP 5
 \fBmicroapl\fR(8), \fBmicro_evtd\fR(8), \fBmicro_evtd.event\fR(8).

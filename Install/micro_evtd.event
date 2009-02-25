@@ -49,7 +49,7 @@ fan_fault() {
 
 create_script() {
 	## Ensure path does not exist
-	rm -r -f $TMP/micro_evtd.event
+	rm -f $TMP/micro_evtd.event
 	## Create RAM version of control file
 	cp -a /etc/micro_evtd/micro_evtd.event $TMP/.
 	## Stop flashing LEDs and clear error codes
@@ -74,7 +74,8 @@ over_heat() {
 
 dump_info() {
 	## Temp and fan speed info
-	echo -e "Temp=$1[C-Deg]\nFan=$2rpm\nFan Failures=$3" > $TMP/my_status
+	let "rpm = $2 * 30"
+	echo -e "Temp=$1[C-Deg]\nFan=${rpm}rpm\nFan Failures=$3" > $TMP/my_status
 }
 
 stop() {

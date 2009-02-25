@@ -512,8 +512,7 @@ exit:
 */	
 static char temp_get(void)
 {
-	char iTemp = writeUART(2, (unsigned char*)"\x080\x037");
-	return iTemp;
+	return writeUART(2, (unsigned char*)"\x080\x037");
 }
 
 /**
@@ -548,12 +547,12 @@ static void fan_set_speed(char cSpeed)
 *
 *  arguments   : (in)	void
 *					  
-*  returns     : 		int					= actual fan RPMs
+*  returns     : 		char				= actual fan RPMs units
 ************************************************************************
 */	
-static int fan_get_rpm(void)
+static char fan_get_rpm(void)
 {
-	return writeUART(2, (unsigned char*)"\x080\x038") * 30;
+	return writeUART(2, (unsigned char*)"\x080\x038");
 }
 
 /**
@@ -877,7 +876,6 @@ static void gpio_button_press(void)
 	}
 }
 
-#define FAN_SPEED_RPM iResult
 /**
 ************************************************************************
 *
@@ -894,7 +892,7 @@ static void gpio_button_press(void)
 static int check_status(void)
 {
 	static char iLastTemp = 0;
-	static int iFan_speed = 0;
+	static char iFan_speed = 0;
 	static char iOverTemp = 0;
 	static char iBoost = 1;
 	static char iFanStops = 0;
@@ -903,7 +901,6 @@ static int check_status(void)
 	static float fTrend_temp = -1;
 	static char iTemp = 0;
 
-	int iResult;
 	int dooze = 2;
 	char iTmp;
 	
@@ -947,18 +944,19 @@ static int check_status(void)
 		char iCurrent_speed = 1;
 		char iCmd;
 		char iUpdate = 0;
+		char cFanSpeedRpm;
 
 		// Determine if the fan is already running
-		FAN_SPEED_RPM = fan_get_rpm();
+		cFanSpeedRpm = fan_get_rpm();
 
 		// Determine current fan speed
-		if (FAN_SPEED_RPM > 0) {
+		if (cFanSpeedRpm > 0) {
 			iCurrent_speed = 3;
 			// Slow speed  ~1740rpm
-			if (FAN_SPEED_RPM < 1950)
+			if (cFanSpeedRpm < 65)
 				iCurrent_speed = 2;
 			// Full speed ~ 3000rpm
-			else if (FAN_SPEED_RPM > 2900)
+			else if (cFanSpeedRpm > 96)
 				iCurrent_speed = 4;
 		}
 
@@ -966,9 +964,9 @@ static int check_status(void)
 		// fan rpm variations of +/- lsb so as to reduce status updates
 		// and ignore speed up/down requests.
 		if (iTmp != iTemp || 
-		   ((abs(iFan_speed - FAN_SPEED_RPM) > 60) && !changeSpeed)) {
+		   ((abs(iFan_speed - cFanSpeedRpm) > 2) && !changeSpeed)) {
 			iUpdate = c_UpdateStatus;
-			iFan_speed = FAN_SPEED_RPM;
+			iFan_speed = cFanSpeedRpm;
 		}
 			
 		iTemp = iTmp;

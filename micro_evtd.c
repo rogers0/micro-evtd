@@ -702,7 +702,8 @@ static char DelayedStandby(long ltime)
 			}
 
 			/* Set re-check time to next five minutes */
-			l_TimerEvent = FIVE_MINUTES;
+			else
+				l_TimerEvent = FIVE_MINUTES;
 		}
 
 		if (iOnTime >= 0) {
@@ -1339,8 +1340,7 @@ static void parse_configuration(void)
 						case 4:
 							iHysteresis = iTemp;
 						    // Limit swing
-						    if (iHysteresis < 0) iHysteresis = 0;
-						    else if (iHysteresis > 5) iHysteresis = 5;
+						    if (iHysteresis > 5) iHysteresis = 5;
 						    break;
 						// Get debug settings, do not bother checking level data
 						case 5:

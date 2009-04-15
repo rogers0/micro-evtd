@@ -695,6 +695,8 @@ static char DelayedStandby(long ltime)
 		if (cLocated) {
 			/* Have we passed the current expected standby time? */
 			if (tActualOffTime < ltime) {
+				/* Clear down for re-check */
+				c_DemandedEvent = 0;
 				/* Get next standby time */
 				parse_configuration();
 				/* Now set standby delayed flag */
@@ -985,7 +987,7 @@ static int check_status(void)
 				fTrend_temp = fTempCheck;
 			}
 
-			iTmp = 0;
+			iTmp = iHysteresis;
 			// Add some hysteresis around desired temp switching
 			if (iLastTemp > fTempCheck)
 				iTmp = -iHysteresis;

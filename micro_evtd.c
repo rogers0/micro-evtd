@@ -685,7 +685,9 @@ static char DelayedStandby(long ltime)
 			/* Located this process? */
 			if (512 == execute_command2(PROCESS_CHECK, pos, CALL_WAIT, 0, 0))
 				cLocated = 1;
-			
+#ifdef TEST
+			printf("Process=%s, located=%d\n", pos, cLocated);
+#endif
 			*(last-1) = ',';
 			/* Get next name, user must ensure it is correct */
 			pos = strtok_r(NULL, strokTest, &last);
@@ -693,6 +695,9 @@ static char DelayedStandby(long ltime)
 		
 		/* Found a process we were looking for? */
 		if (cLocated) {
+#ifdef TEST
+			printf("Located %d %d\n", tActualOffTime, ltime);
+#endif
 			/* Have we passed the current expected standby time? */
 			if (tActualOffTime < ltime) {
 				/* Clear down for re-check */
@@ -701,6 +706,9 @@ static char DelayedStandby(long ltime)
 				parse_configuration();
 				/* Now set standby delayed flag */
 				c_DemandedEvent = 1;
+#ifdef TEST
+				printf("Re-parsed\n");
+#endif
 			}
 
 			/* Set re-check time to next five minutes */
@@ -795,7 +803,11 @@ static void check_shutdown(time_t tt_LastTimerEventPing)
 			if (l_TimerEvent <= 0) {
 				// Prevent re-entry and execute command
 				c_TimerFlag = 2;
+#ifdef TEST
+				printf("Expired timer\n");
+#else
 				execute_command(TIMED_STANDBY, i_instandby, CALL_WAIT);
+#endif
 			}
 		}
 

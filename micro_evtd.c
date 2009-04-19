@@ -137,7 +137,7 @@ char c_bScheduleBreak = 0;
 int iButtonAction = 0; ///< Defines type of button action, 0=OFF, 128=STANDBY
 int iButtonHeld = 0;
 time_t tOnLastTime = 999;
-char alt = 1; ///< Provides control for alternating sound on held button
+signed char alt = 1; ///< Provides control for alternating sound on held button
 long iOffTime = 0; ///< In units of week seconds
 time_t tActualOffTime = 0;
 long iOnTime = 0; ///< In units of week seconds
@@ -153,7 +153,7 @@ static void micro_evtd_main(void);
 static void parse_configuration(void);
 static int execute_command2(char, char*, char, char, long);
 static int execute_command(char, char, char);
-static char temp_get(void);
+static signed char temp_get(void);
 static void open_gpio(void);
 static void GetTime(long, TIMER*, long*);
 static char FindNextDay(long, TIMER*, long*);
@@ -510,9 +510,9 @@ exit:
 *  returns     : 		char				= actual temperature
 ************************************************************************
 */	
-static char temp_get(void)
+static signed char temp_get(void)
 {
-	return writeUART(2, (unsigned char*)"\x080\x037");
+	return (signed char)writeUART(2, (unsigned char*)"\x080\x037");
 }
 
 /**
@@ -906,7 +906,7 @@ static void gpio_button_press(void)
 */
 static int check_status(void)
 {
-	static char iLastTemp = 0;
+	static signed char iLastTemp = 0;
 	static char iFan_speed = 0;
 	static char iOverTemp = 0;
 	static char iBoost = 1;
@@ -914,10 +914,10 @@ static int check_status(void)
 	static char iFan_failure = 0;
 	static char changeSpeed = 0;
 	static float fTrend_temp = -1;
-	static char iTemp = 0;
+	static signed char iTemp = 0;
 
 	int dooze = 2;
-	char iTmp;
+	signed char iTmp;
 	
 	
 	// See if our configuration file has changed?
@@ -930,6 +930,7 @@ static int check_status(void)
 
 	// Get system temp
 	iTmp = temp_get();
+
 	// Keep sane
 	if (iTmp < 0) iTmp = iTemp;
 
@@ -999,14 +1000,15 @@ static int check_status(void)
 				fTrend_temp = fTempCheck;
 			}
 
-			iTmp = iHysteresis;
+			iTmp = 0;
 			// Add some hysteresis around desired temp switching
 			if (iLastTemp > fTempCheck)
 				iTmp = -iHysteresis;
 
 			// Determine the desired fan speed based on returned box temp.
 			if (fTempCheck <= (iTempRange[0]) + iTmp) iCmd = 2;
-			else if (fTempCheck > (iTempRange[2])) iCmd = 5;
+			// Allow harder drive when we reach the limit
+			else if (fTempCheck > (iTempRange[2]) + iTmp) iCmd = 5;
 			else if (fTempCheck > (iTempRange[1])) iCmd = 4;
 			else iCmd = 3;
 
@@ -1044,6 +1046,7 @@ static int check_status(void)
 						fan_set_speed(iCmd);
 						// Clear fan speed request flag
 						changeSpeed = 0;
+						dooze = 2;
 					}
 				}
 
@@ -1064,8 +1067,9 @@ static int check_status(void)
 				// On first switch on, go full power to over come any dirt/dust spin-up issues
 				if (1 == iCurrent_speed && iCmd > 1) {
 					if (iBoost) {
+						dooze = 10;
 						iBoost = 2;
-						dooze = iCmd = 4;
+						iCmd = 4;
 					}
 				}
 				

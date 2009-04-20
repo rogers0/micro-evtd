@@ -507,7 +507,7 @@ exit:
 *
 *  arguments   : (in)	void
 *					  
-*  returns     : 		char				= actual temperature
+*  returns     : 		signed char			= actual temperature
 ************************************************************************
 */	
 static signed char temp_get(void)
@@ -696,7 +696,7 @@ static char DelayedStandby(long ltime)
 		/* Found a process we were looking for? */
 		if (cLocated) {
 #ifdef TEST
-			printf("Located %d %d\n", tActualOffTime, ltime);
+			printf("Located %ld %ld\n", (long)tActualOffTime, ltime);
 #endif
 			/* Have we passed the current expected standby time? */
 			if (tActualOffTime < ltime) {
@@ -1170,7 +1170,7 @@ static TIMER* populateObject(TIMER* pTimer, int iTime, char iFirstDay, char iPro
 			/* Scale time accordingl */
 			pTimer->time = iTime + (j*TWENTYFOURHR);
 #if TEST
-			printf("Group %d - %d\n", j, pTimer->time);
+			printf("Group %d - %ld\n", j, pTimer->time);
 #endif
 			/* Allocate space for the next event object */
 			pTimer->pointer = (void*)calloc(sizeof(TIMER), sizeof(char));
@@ -1181,7 +1181,7 @@ static TIMER* populateObject(TIMER* pTimer, int iTime, char iFirstDay, char iPro
 		/* Scale time accordingly */
 		pTimer->time = iTime + (iProcessDay*TWENTYFOURHR);
 #if TEST
-		printf("Single %d - %d\n", iProcessDay, pTimer->time);
+		printf("Single %d - %ld\n", iProcessDay, pTimer->time);
 #endif
 		/* Allocate space for the next event object */
 		pTimer->pointer = (void*)calloc(sizeof(TIMER), sizeof(char));
@@ -1650,6 +1650,9 @@ int main(int argc, char *argv[])
 	argc--;
 	argv++;
 
+	// Ensure un-buffered output
+	setvbuf(stdout, (char*)NULL, _IONBF, 0);
+	
 	// Generate unique key.  This will fail with stock so let it be.
 	if ((mutex = ftok(micro_conf, 'M')) == (key_t) -1) {
 	    printf("IPCS: Error, falling back to 'flock'\n");
@@ -1850,7 +1853,7 @@ static char FindNextDay(long timeNow, TIMER* pTimer, long* time)
 				if (*time > pTimer->time) {
 					*time = pTimer->time;
 #ifdef TEST
-					printf("locate update %d\n", *time);
+					printf("locate update %ld\n", *time);
 #endif
 				}
 			}
@@ -1859,7 +1862,7 @@ static char FindNextDay(long timeNow, TIMER* pTimer, long* time)
 				iLocated++;
 				*time = pTimer->time;
 #ifdef TEST
-				printf("located %d\n", *time);
+				printf("located %ld\n", *time);
 #endif
 			}
 		}
@@ -1873,7 +1876,7 @@ static char FindNextDay(long timeNow, TIMER* pTimer, long* time)
 			/* Week wrap, adjust time to suit */
 			*time += (1 + last_day) * TWENTYFOURHR;
 #ifdef TEST
-			printf("Time adjusted %d\n", *time);
+			printf("Time adjusted %ld\n", *time);
 #endif
 		}
 	}

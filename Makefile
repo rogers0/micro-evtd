@@ -1,8 +1,9 @@
 TITLE=Linkstation/Kuro/Terastation Micro Event daemon
 
-CC ?=gcc
-INSTPATH=/usr/local/sbin
-CFLAGS=-Wall -s -Os -o
+# CC env var defaults to 'cc', but as micro-evtd will be highly cross-compiled it is substituted
+CC = $(CROSS_COMPILE)gcc
+CFLAGS ?= -Wall -s -Os -o
+INSTPATH ?= /usr/local/sbin
 
 all: micro_evtd
 
@@ -19,7 +20,7 @@ ts: micro_evtd.c version.h
 maintainer-test: micro_evtd.c version.h
 	@echo "This command is intended for maintainer use only"
 	$(CC) $(CFLAGS) micro_evtd micro_evtd.c -DTEST
-	
+
 clean: micro_evtd
 	-rm -f /etc/init.d/micro_evtd
 	-rm -f /etc/micro_evtd/micro_evtd.conf
@@ -72,5 +73,5 @@ install: micro_evtd
 	-cp Install/micro_evtd.conf.5 /usr/local/man/man5/.
 	@echo "..Update the man database"
 	@if [ -e /usr/bin/mandb ]; then /usr/bin/mandb ; fi
-	
+
 	-/etc/init.d/micro_evtd start

@@ -1,6 +1,7 @@
 TITLE=Linkstation/Kuro/Terastation Micro Event daemon
 
-# CC env var defaults to 'cc', but as micro-evtd will be highly cross-compiled it is substituted
+CROSS_COMPILE	?=
+# CC env var defaults to 'cc', but as micro_evtd will be highly cross-compiled it is substituted
 CC = $(CROSS_COMPILE)gcc
 CFLAGS ?= -Wall -s -Os -o
 INSTPATH ?= /usr/local/sbin

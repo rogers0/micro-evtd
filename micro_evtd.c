@@ -1,7 +1,7 @@
 /*
 * Linkstation/Kuro/Terastation ARM series Micro daemon
 *
-* Written by Bob Perry (2009) lb-source@users.sourceforge.net
+* Written by Bob Perry (2007-2009) lb-source@users.sourceforge.net
 *
 * This program is free software; you can redistribute it and/or modify
 * it under the terms of the GNU General Public License as published by
@@ -113,9 +113,9 @@ char iControlFan=1;
 int refreshRate=40;
 char iHysteresis=2;
 char i_Use_Trend=1;
-char log_path[20]="/var/log";
+char log_path[40]="/var/log";
 char iDebugLevel=0;
-char strTmpPath[20]="/tmp";
+char strTmpPath[40]="/tmp";
 int i_FileDescriptor = 0;
 int i_Poll = 0;
 int mutexId=0;
@@ -1322,7 +1322,6 @@ static void parse_configuration(void)
 								// Ensure that the watchdog is turned off, may have been on before
 								system_set_watchdog(255);
 							}
-
 							else
 								refreshRate = iTemp;
 
@@ -1366,12 +1365,14 @@ static void parse_configuration(void)
 							break;
 						// Pickup user's log path, no directory checking occurs
 						case 6:
-							sprintf( log_path, "%s", pos);
+							// Ensure we can not overflow this buffer
+							if (strlen(pos) < 40)
+								sprintf( log_path, "%s", pos);
 							break;
 						// Get the tmp/RAM path name, no checking occurs
 						case 7:
 							// Ensure we can not overflow this buffer
-							if (strlen(pos) < 20)
+							if (strlen(pos) < 40)
 								sprintf( strTmpPath, "%s", pos);
 							break;
 						// Get button action demand

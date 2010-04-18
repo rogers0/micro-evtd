@@ -3,7 +3,7 @@
 # microapl Linkstation/Kuro Micro-Controller querry script
 #
 # Other files used are:
-# /usr/local/sbin/micro_evtd
+#   micro_evtd program, usually in /usr/local/sbin/
 #
 # Written by Bob Perry (2007-2009) lb-source@users.sourceforge.net
 #

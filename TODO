@@ -15,3 +15,6 @@ To Do List for Linkstation/Kuro/Terastation Micro Event daemon
 * Review changes before release (always)
   * run tests on clean stock firmware, Freelink 1.0rev2 and Freelink "Debian Lenny"
     check that needed directories are available or created on them
+
+* Versioning
+  * Add last committed svn revision to version.h (via Makefile)

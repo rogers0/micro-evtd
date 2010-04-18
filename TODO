@@ -3,7 +3,7 @@ To Do List for Linkstation/Kuro/Terastation Micro Event daemon
 
 * SBIN_PREFIX support
   to allow installing into /usr/local/sbin (default), /usr/sbin or /sbin
-  * daemon and event script still use fix path /usr/local
+  * daemon script uses fix path /usr/local
   * Makefile can already verify and install with different prefixes
     (currently support for /usr/sbin and /sbin is disabled to avoid inconsistencies)
 
@@ -11,6 +11,9 @@ To Do List for Linkstation/Kuro/Terastation Micro Event daemon
   * always refer to Filesystem Hierarchy Standard - http://www.pathname.com/fhs/
   * use /tmp/micro_evtd to place temporary files to avoid collisions with other programs
   * event script belongs inside sbin folder, not inside /etc
+    event script copies itself to tmp folder; use $0 instead of fix path
+    micro_evtd.c references event script too; no path and use PATH search, problems?
+    or add new config item SBIN=/usr/local/sbin to /etc/micro_evtd.conf; very flexible, no recompilation necessary; default?
 
 * Review changes before release (always)
   * run tests on clean stock firmware, Freelink 1.0rev2 and Freelink "Debian Lenny"
@@ -18,3 +21,16 @@ To Do List for Linkstation/Kuro/Terastation Micro Event daemon
 
 * Versioning
   * Add last committed svn revision to version.h (via Makefile)
+
+* Install
+  * RC links
+    * Simple link ok, sufficient and complete?
+      ln -s ../init.d/micro_evtd /etc/rcS.d/S70micro_evtd
+    * On Debian also update-rc.d and invoke-rc.d could be used
+      if [ -e '/etc/debian_version'] / if [ -x "`which invoke-rc.d 2>/dev/null`" ]; then
+  * man pages
+    Adopt man db update
+    if [ -x "`which mandb 2>/dev/null`" ]; then
+
+* Misc
+  * Analyse and adopt changes from Debian package

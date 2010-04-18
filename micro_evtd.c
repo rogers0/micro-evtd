@@ -1,6 +1,6 @@
 /*
 * Linkstation/Kuro/Terastation ARM series Micro daemon
-* 
+*
 * Written by Bob Perry (2009) lb-source@users.sourceforge.net
 *
 * This program is free software; you can redistribute it and/or modify
@@ -28,10 +28,10 @@
 #include <sys/param.h>
 #include <sys/mount.h>
 #include <sys/statfs.h>
-#include <stdio.h> 
-#include <string.h> 
-#include <stdlib.h> 
-#include <sys/time.h> 
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/time.h>
 #include <linux/serial.h>
 #include <stdlib.h>
 
@@ -96,7 +96,7 @@ typedef struct _OFF_TIMER {
 	void* pointer;	///< Pointer to next event
 } TIMER;
 
-// Some global variables
+// Some global variables with default values
 const char strVersion[]="Micro-monitor daemon Version";
 const char micro_device[]="/dev/ttyS1";
 const char micro_conf[]="/etc/micro_evtd/micro_evtd.conf";
@@ -171,12 +171,12 @@ static char DelayedStandby(long);
 *
 *  arguments   : (in)	char				= Event script command
 *						char				= script command
-*						char				= either 0=execute and wait, 
+*						char				= either 0=execute and wait,
 *													 1=execute and no wait.
-*					  
+*
 *  returns     : 		int					= -1 indicates an error.
 ************************************************************************
-*/	
+*/
 static int execute_command(char cmd, char cmd2, char type)
 {
 	return execute_command2(cmd, ".", type, cmd2, 0);
@@ -190,10 +190,10 @@ static int execute_command(char cmd, char cmd2, char type)
 *  description : Gain access to the micro interface.
 *
 *  arguments   : (in)	void
-*					  
+*
 *  returns     : 		void
 ************************************************************************
-*/	
+*/
 static void open_serial(void)
 {
 	struct termios newtio;
@@ -211,7 +211,7 @@ static void open_serial(void)
 		ioctl(i_FileDescriptor, TCFLSH, 2);
 		/* Clear data structures */
 		memset(&newtio, 0, sizeof(newtio));
-		
+
 		newtio.c_iflag =IGNBRK;
 		newtio.c_cflag = PARENB | CLOCAL | CREAD | CSTOPB | CS8 | B38400;
 		newtio.c_lflag &= (~ICANON);
@@ -232,10 +232,10 @@ static void open_serial(void)
 *  description : Gain access to the GPIO.
 *
 *  arguments   : (in)	void
-*					  
+*
 *  returns     : 		void
 ************************************************************************
-*/	
+*/
 static void open_gpio(void)
 {
 #ifndef NO_GPIO
@@ -267,10 +267,10 @@ static void open_gpio(void)
 *				 lock.
 *
 *  arguments   : (in)	void
-*					  
+*
 *  returns     : 		void
 ************************************************************************
-*/	
+*/
 static void close_serial(void)
 {
 	union semun {
@@ -278,7 +278,7 @@ static void close_serial(void)
 		struct semid_ds *buf;
 		ushort *array;
 	} arg;
-	
+
 	if (i_FileDescriptor > 0) {
 		/* Close port and invalidate our pointer */
 		close(i_FileDescriptor);
@@ -287,11 +287,11 @@ static void close_serial(void)
 	// Close memory handle too
 	if (m_fd > 0)
 		close(m_fd);
-	
+
 	/* Close flock handles if we have one */
 	if (resourceLock_fd > 0)
 		close(resourceLock_fd);
-		
+
 	// Remove it mutex if we have one
 	if (mutexId >0)
 		semctl(mutexId, 0, IPC_RMID, arg);
@@ -309,10 +309,10 @@ static void close_serial(void)
 *  description : Demand micro reset.
 *
 *  arguments   : (in)	void
-*					  
+*
 *  returns     : 		void
 ************************************************************************
-*/	
+*/
 static void reset(void)
 {
 	char buf[40]={0xFF,};
@@ -323,7 +323,7 @@ static void reset(void)
 	for (i=0;i<2;i++) {
 		read(i_FileDescriptor, buf, sizeof(buf));
 	}
-	
+
 	usleep(500);
 }
 
@@ -335,10 +335,10 @@ static void reset(void)
 *  description : User termination handler.  Handle the system events here.
 *
 *  arguments   : (in)	int				= system handler.
-*					  
+*
 *  returns     : 		void
 ************************************************************************
-*/	
+*/
 static void termination_handler(int signum)
 {
 	switch (signum) {
@@ -370,10 +370,10 @@ static void termination_handler(int signum)
 *  description : Lock/un-lock the micro interface resource.
 *
 *  arguments   : (in)	char				= lock flag.
-*					  
+*
 *  returns     : 		void
 ************************************************************************
-*/	
+*/
 static void lockMutex(char iLock) {
 	// Handle mutex locking/un-locking here
 	struct sembuf mutexKey = {0, -1, 0};  // set to allocate resource
@@ -385,7 +385,7 @@ static void lockMutex(char iLock) {
 
 		semop(mutexId, &mutexKey, 1);
 	}
-	
+
 	// Drop back to flocks
 	else
 		flock(resourceLock_fd, (iLock) ? LOCK_EX : LOCK_UN);
@@ -402,10 +402,10 @@ static void lockMutex(char iLock) {
 *
 *  arguments   : (in)	int					= number of characters
 *						unsigned char*		= pointer to transmit buffer
-*					  
+*
 *  returns     : 		int					= micro return
 ************************************************************************
-*/	
+*/
 static int writeUART(int n, unsigned char* output)
 {
 	/* Handle ALL UART messages from a central point, reduce code
@@ -441,7 +441,7 @@ static int writeUART(int n, unsigned char* output)
 			iResult = write(i_FileDescriptor, tbuf, n+1);
 			if (iResult < n+1)
 				goto again;
-		} 
+		}
 
 		tt_TimeoutPoll.tv_usec = 500000;
 		tt_TimeoutPoll.tv_sec = 0;
@@ -456,7 +456,7 @@ static int writeUART(int n, unsigned char* output)
 			/* Ignore data errors */
 			len = read(i_FileDescriptor, rbuf, sizeof(rbuf));
 		}
-		
+
 		/* Too little data? Yes, its an error */
 		if (len < 4) {
 again:
@@ -469,7 +469,7 @@ again:
 			icksum = 0;
 			for (i=0;i<len;i++)
 				icksum -= rbuf[i];
-			
+
 			// Process if data valid
 			if (0 == icksum){
 				if (n>0) {
@@ -478,7 +478,7 @@ again:
 						n = 0;
 				}
 			}
-				
+
 			if (0 == n) {
 				iReturn = (int)rbuf[2];
 				if (len-3 > 1) {
@@ -494,7 +494,7 @@ again:
 
 exit:
 	lockMutex(0);
-	
+
 	return iReturn;
 }
 
@@ -506,10 +506,10 @@ exit:
 *  description : Get the current MB temperature from the micro.
 *
 *  arguments   : (in)	void
-*					  
+*
 *  returns     : 		signed char			= actual temperature
 ************************************************************************
-*/	
+*/
 static signed char temp_get(void)
 {
 	return (signed char)writeUART(2, (unsigned char*)"\x080\x037");
@@ -526,10 +526,10 @@ static signed char temp_get(void)
 *															 2=SLOW
 *															 3=FAST
 *															 4=FULL
-*					  
+*
 *  returns     : 		void
 ************************************************************************
-*/	
+*/
 static void fan_set_speed(char cSpeed)
 {
 	unsigned char ucSpdDemand[3] = {'\x001','\x033', ' '};
@@ -546,10 +546,10 @@ static void fan_set_speed(char cSpeed)
 *  description : Retrieve the fan RPM from the micro.
 *
 *  arguments   : (in)	void
-*					  
+*
 *  returns     : 		char				= actual fan RPMs units
 ************************************************************************
-*/	
+*/
 static char fan_get_rpm(void)
 {
 	return writeUART(2, (unsigned char*)"\x080\x038");
@@ -563,10 +563,10 @@ static char fan_get_rpm(void)
 *  description : Set the micro watchdog timer.
 *
 *  arguments   : (in)	char				= defeat time, in seconds
-*					  
+*
 *  returns     : 		void
 ************************************************************************
-*/	
+*/
 static void system_set_watchdog(char cTimer)
 {
 	unsigned char ucWatchDogDemand[3] = {'\x001','\x035', ' '};
@@ -586,28 +586,28 @@ static void system_set_watchdog(char cTimer)
 *
 *  arguments   : (in)	char				= Event script command
 *						char*				= pointer to a command string
-*						char				= either 0=execute and wait, 
+*						char				= either 0=execute and wait,
 *													 1=execute and no wait.
 *						char				= script command
 *						long				= long value
-*					  
+*
 *  returns     : 		int					= -1 indicates an error.
 ************************************************************************
-*/	
+*/
 static int execute_command2(char cmd, char* cmdstring, char type, char cmd2, long cmd3)
 {
 	char strEventScript[80];
-	
+
 	// Create the command line
-	sprintf(strEventScript, "/%s/micro_evtd.event %c %d %ld %s %s %d %c", 
-	(CP_SCRIPT ==  cmd? "etc/micro_evtd" : strTmpPath), 
-	cmd, 
-	cmd2, 
+	sprintf(strEventScript, "/%s/micro_evtd.event %c %d %ld %s %s %d %c",
+	(CP_SCRIPT ==  cmd? "etc/micro_evtd" : strTmpPath),
+	cmd,
+	cmd2,
 	cmd3,
 	cmdstring,
-	(CP_SCRIPT ==  cmd? strTmpPath : log_path), 
+	(CP_SCRIPT ==  cmd? strTmpPath : log_path),
 	iDebugLevel, (CALL_NO_WAIT == type ? '&' : ' '));
-	
+
 	// Invoke request
 	return system(strEventScript);
 }
@@ -620,7 +620,7 @@ static int execute_command2(char cmd, char* cmdstring, char type, char cmd2, lon
 *  description : Establish the resource lock for the Micro interface.
 *
 *  arguments   : (in)	void
-*					  
+*
 *  returns     : 		void
 *
 ************************************************************************
@@ -643,14 +643,14 @@ static void getResourceLock(void)
 				mutexId = semget(mutex, 1, IPC_CREAT|0666);
 			}
 		}
-			
+
 		if (mutexId > 0) {
 			// Initialise semaphore to 0
 			arg.val = 1;
 			semctl(mutexId, 0, SETVAL, arg);
 		}
 	}
-	
+
 	/* No IPC available, fall-back to file-lock mechanism */
 	else
 		resourceLock_fd = open(micro_lock, O_WRONLY|O_CREAT, 0700);
@@ -667,7 +667,7 @@ static void getResourceLock(void)
 *				 recover event then this event is removed.
 *
 *  arguments   : (in)	time_t				= time we last ran
-*					  
+*
 *  returns     : 		char				= 0 failed, 1 located process
 *
 ************************************************************************
@@ -692,7 +692,7 @@ static char DelayedStandby(long ltime)
 			/* Get next name, user must ensure it is correct */
 			pos = strtok_r(NULL, strokTest, &last);
 		}
-		
+
 		/* Found a process we were looking for? */
 		if (cLocated) {
 #ifdef TEST
@@ -724,7 +724,7 @@ static char DelayedStandby(long ltime)
 			}
 		}
 	}
-	
+
 	return cResult;
 }
 
@@ -737,7 +737,7 @@ static char DelayedStandby(long ltime)
 *				 time remaining value.
 *
 *  arguments   : (in)	time_t				= time we last ran
-*					  
+*
 *  returns     : 		void
 *
 ************************************************************************
@@ -759,10 +759,10 @@ static void check_shutdown(time_t tt_LastTimerEventPing)
 		// Decrement our powerdown timer
 		if (l_TimerEvent > 0) {
 			long l_check;
-			struct tm tm; 
-			/* We adjust the time to GMT so we can catch DST changes. */ 
+			struct tm tm;
+			/* We adjust the time to GMT so we can catch DST changes. */
 			l_check = time(&ltime) - tt_LastTimerEventPing;
-			tm = *localtime(&ltime); 
+			tm = *localtime(&ltime);
 			l_TimerEvent -= l_check;
 			/* Large clock drift, either user set time or an ntp update, handle accordingly. */
 			if (abs(l_check) > 60 || tm.tm_isdst != s_dst) {
@@ -781,7 +781,7 @@ static void check_shutdown(time_t tt_LastTimerEventPing)
 						c_FirstTimeFlag = 0;
 					}
 				}
-				
+
 				else if (c_Skip && !c_FirstTimeFlag) {
 					execute_command(WARNING, 99, CALL_NO_WAIT);
 					c_FirstTimeFlag = 1;
@@ -826,7 +826,7 @@ static void check_shutdown(time_t tt_LastTimerEventPing)
 *  description : Process the button event.
 *
 *  arguments   : (in)	int					= Button held counter
-*					  
+*
 *  returns     : 		void
 *
 ************************************************************************
@@ -842,14 +842,14 @@ static void gpio_button_press(void)
 			alt = iButtonHeld = 1;
 		}
 	}
-	
-	// Provide an alternative button control in the event of gpio failure (support 
+
+	// Provide an alternative button control in the event of gpio failure (support
 	else {
 		int iButton = 0xF ^ writeUART(2, (unsigned char*)"\x080\x036");
 		if (iButton != 0 && iLastSwitch != iButton)
 			alt = iButtonHeld = 1;
 	}
-	
+
 	/* Has button been and still is pressed? */
 	if (iButtonHeld) {
 		char cButtonHeld = iButtonHeld > ENTER_EM_TIME;
@@ -859,7 +859,7 @@ static void gpio_button_press(void)
 		/* Button held for longer than shutdown event */
 		if (ENTER_EM_TIME == iButtonHeld)
 			alt = 3;
-		
+
 		/* Check for switch event change */
 		if (iLastSwitch != iSwitch) {
 			/* On release please */
@@ -871,14 +871,14 @@ static void gpio_button_press(void)
 				/* Pipe data out through the event  script */
 				execute_command2(BUTTON_EVENT, "micon", CALL_NO_WAIT, (iButtonAction | iLastSwitch), 0);
 			}
-				
+
 			iLastSwitch = iSwitch;
 		}
-		
+
 		if (1 == alt) {
 			alt = 1;
 		}
-		
+
 		/* Toggle sound if button held too long */
 		else if (3 == alt || cButtonHeld) {
 			alt = 2;
@@ -899,7 +899,7 @@ static void gpio_button_press(void)
 *  description : We check the temp and fan actions here.
 *
 *  arguments   : (in)	void
-*					  
+*
 *  returns     : 		int					= demanded refresh time
 *
 ************************************************************************
@@ -918,8 +918,8 @@ static int check_status(void)
 
 	int dooze = 2;
 	signed char iTmp;
-	
-	
+
+
 	// See if our configuration file has changed?
 	check_configuration();
 
@@ -979,14 +979,14 @@ static int check_status(void)
 		// Alert user to temp and fan speed info on change only.  Ignore
 		// fan rpm variations of +/- lsb so as to reduce status updates
 		// and ignore speed up/down requests.
-		if (iTmp != iTemp || 
+		if (iTmp != iTemp ||
 		   ((abs(iFan_speed - cFanSpeedRpm) > 2) && !changeSpeed)) {
 			iUpdate = c_UpdateStatus;
 			iFan_speed = cFanSpeedRpm;
 		}
-			
+
 		iTemp = iTmp;
-		
+
 		// See if we need to control the fan speed?
 		if (iControlFan && 0 == iOverTemp) {
 			float fTempCheck = (float)iTemp;
@@ -1014,7 +1014,7 @@ static int check_status(void)
 
 			if (iControlFan > 1) iCmd = ((iCmd > iControlFan) ? iCmd : iControlFan);
 			iCmd--;
-			
+
 			// Check if we had requested a speed-up request from stopped
 			if (changeSpeed > 1 && 1 == iCurrent_speed) {
 				// Check often on change to ensure it happens
@@ -1072,7 +1072,7 @@ static int check_status(void)
 						iCmd = 4;
 					}
 				}
-				
+
 				fan_set_speed(iCmd);
 			    iLastTemp = fTempCheck - iTmp;
 			}
@@ -1085,7 +1085,7 @@ static int check_status(void)
 			execute_command2(INFO, str, CALL_NO_WAIT, iTemp, iFan_speed);
 		}
 	}
-	
+
 	return dooze;
 }
 
@@ -1097,7 +1097,7 @@ static int check_status(void)
 *  description : Main processing loop.
 *
 *  arguments   : (in)	void
-*					  
+*
 *  returns     : 		void
 *
 ************************************************************************
@@ -1122,19 +1122,19 @@ static void micro_evtd_main(void)
 		sysSleep.tv_nsec = (iLastSwitch != 0) ? 500000000 : 0;
 		nanosleep(&sysSleep, NULL);
 		iCount+= 2;
-		
+
 		// Get button press event
 		gpio_button_press();
-		
+
 		// Poll the system status?
 		if (iCount >= dooze && !iButtonHeld && (2 != c_TimerFlag)) {
 			iCount = 0;
 			dooze = check_status();
 		}
-		
+
 		// Check our remaining time
 		check_shutdown(tt_LastTimerEventPing);
-		
+
 		// Keep track of shutdown time remaining
 		tt_LastTimerEventPing = time(NULL);
 	};
@@ -1152,7 +1152,7 @@ static void micro_evtd_main(void)
 *						int					= time in minutes
 *						char				= first day grouping
 *						char				= current day this applies too
-*					  
+*
 *  returns     : 		TIMER*				= new timer object for this group
 *
 ************************************************************************
@@ -1203,7 +1203,7 @@ static TIMER* populateObject(TIMER* pTimer, int iTime, char iFirstDay, char iPro
 *				 simple checks are made on retrieved values.
 *
 *  arguments   : (in)	void
-*					  
+*
 *  returns     : 		void
 *
 ************************************************************************
@@ -1270,7 +1270,7 @@ static void parse_configuration(void)
 		/* Now create our timer objects for on and off events */
 		pOn = ponTimer = (TIMER*)calloc(sizeof(TIMER), sizeof(char));
 		pOff = poffTimer = (TIMER*)calloc(sizeof(TIMER), sizeof(char));
-		
+
 		char buff[80];
 		char bOnTime = 0;
 		// Grab a line from the configuration file
@@ -1304,14 +1304,14 @@ static void parse_configuration(void)
 					// Locate our expected commands
 					for(cmd=0;cmd<20;cmd++)
 						if (strcasecmp(pos, command[cmd]) == 0) break;
-					
+
 					pos = strtok_r(NULL, strokTest, &last);
 
 					if (!pos)
 						break;
 
 					int iTemp = atoi(pos);
-			
+
 					// Now parse the setting
 					// Excuse the goto coding, not nice but necessary here
 					switch (cmd) {
@@ -1330,7 +1330,7 @@ static void parse_configuration(void)
 								if (strcasecmp(pos, "OFF") == 0)
 									c_UpdateStatus = 0;
 							}
-							
+
 							break;
 						// Fan failure stop time before event trigger
 						case 1:
@@ -1414,7 +1414,7 @@ process:
 							}
 
 							pTime = populateObject(pTimer, iTime, cStart, cEnd);
-							
+
 							/* Update our pointers */
 							if (11 == cmd) pOn =  pTime;
 							else pOff =  pTime;
@@ -1443,28 +1443,28 @@ process:
 							/* New start, reset group start */
 							if (!ilastGroup && iFirstDay)
 								iFirstDay = 0;
-							
+
 							/* For groups, */
 							iProcessDay = cmd-12;
 							/* Remove grouping flag for next defintion */
 							if (1 == iGroup)
 								iFirstDay = iProcessDay;
-			
+
 							/* snapshot group */
 							ilastGroup = iGroup;
 							iGroup = 0;
 							break;
 					}
-					
+
 					// Truncate command completion
 					if (cmd  < 11)
 						pos = NULL;
 				}
 			}
 		}
-		
+
 		// Dump the file pointer for others
-		fclose(file);		
+		fclose(file);
 	}
 
 	// Handle standby and wakeup timer
@@ -1516,7 +1516,7 @@ process:
 *				 pending time file.
 *
 *  arguments   : (in)	time_t				= current time
-*					  
+*
 *  returns     : 		void
 ************************************************************************
 */
@@ -1541,10 +1541,10 @@ static void validate_time(time_t ltime)
 	else {
 		/* Time shutdown so check dates, otherwise it is an interval only */
 		offTime = ((iOffTime - current_time) * 60);
-		
+
 		tActualOffTime = tworktime = ltime + offTime;
 		decode_time = localtime(&tworktime);
-	
+
 		sprintf(strOff, "with %02d/%02d %02d:%02d",
 			decode_time->tm_mon+1, decode_time->tm_mday,
 			decode_time->tm_hour, decode_time->tm_min);
@@ -1561,11 +1561,11 @@ static void validate_time(time_t ltime)
 		// are not skipping a current standby event?
 		if (!c_Skip) {
 			onTime = (iOnTime - current_time) * 60;
-			
+
 			// Record time
 			tOnLastTime = tworktime = ltime + onTime;
 		}
-		
+
 		decode_time = localtime(&tOnLastTime);
 
 		sprintf(strOn, "%02d/%02d %02d:%02d",
@@ -1575,7 +1575,7 @@ static void validate_time(time_t ltime)
 
 	syslog(LOG_INFO, "Standby is set %s %s", strOff, strOn);
 
-#ifdef TEST		
+#ifdef TEST
 	printf("%s %s\n", strOff, strOn);
 #endif
 
@@ -1600,7 +1600,7 @@ static void validate_time(time_t ltime)
 *				 file has changed since.
 *
 *  arguments   : (in)	char				= force re-check flag
-*					  
+*
 *  returns     : 		void
 ************************************************************************
 */
@@ -1630,7 +1630,7 @@ static void check_configuration(void)
 *
 *  arguments   : (in)	int				= number of commands
 *  						char*			= Pointer to supplied tokens
-*					  
+*
 *  returns     : 		void
 *
 ************************************************************************
@@ -1652,7 +1652,7 @@ int main(int argc, char *argv[])
 
 	// Ensure un-buffered output
 	setvbuf(stdout, (char*)NULL, _IONBF, 0);
-	
+
 	// Generate unique key.  This will fail with stock so let it be.
 	if ((mutex = ftok(micro_conf, 'M')) == (key_t) -1) {
 	    printf("IPCS: Error, falling back to 'flock'\n");
@@ -1669,7 +1669,7 @@ int main(int argc, char *argv[])
 			argc--;
 			argv++;
 			override_time = atoi(*argv);
-			break;			
+			break;
 #endif
 		case 'p':
 			argc--;
@@ -1733,7 +1733,7 @@ int main(int argc, char *argv[])
 				// Locate anymore commands?
 				pos = strtok(NULL, ", ");
 			};
-				
+
 			exit(0);
 			break;
 		}
@@ -1743,15 +1743,15 @@ int main(int argc, char *argv[])
 	}
 
 	open_serial();
-	
+
 	setpriority(PRIO_PROCESS, 0, iSetPriority);
-	
+
 	if (!i_debug) {
 		// Run in background?
 		if(daemon(0, 0) != 0) {
 			exit(-1);
 		}
-		
+
 		/* Set up termination handlers */
 		signal(SIGTSTP, SIG_IGN); /* ignore tty signals */
 		signal(SIGCHLD, SIG_IGN);
@@ -1770,7 +1770,7 @@ int main(int argc, char *argv[])
 
 	// Lock out device resource
 	getResourceLock();
-	
+
 	// Check configuration and establish the tmp paths
 	i_instandby++;
 	check_configuration();
@@ -1784,7 +1784,7 @@ int main(int argc, char *argv[])
 
 	//Establish standby timers
 	parse_configuration();
-	
+
 	// Go do our thing
 	micro_evtd_main();
 
@@ -1799,7 +1799,7 @@ int main(int argc, char *argv[])
 *  description : Free the memory and destroy the pointer object,
 *
 *  arguments   : (in)	TIMER*			= pointer to timer object
-*					  
+*
 *  returns     : void
 *
 ************************************************************************
@@ -1833,7 +1833,7 @@ static void destroyObject(TIMER* pTimer)
 *  arguments   : (in)	long				= time to scan against
 *						TIMER*				= pointer to timer object
 *						long*				= pointer to located time
-*					  
+*
 *  returns     : 		char				= located valid time entry
 *											  flag, 0=NO, 1=YES
 *
@@ -1869,7 +1869,7 @@ static char FindNextDay(long timeNow, TIMER* pTimer, long* time)
 
 		pTimer = pTimer->pointer;
 	}
-	
+
 	/* Grouped events?, ie only tomorrow */
 	if (iLocated) {
 		if (timeNow < 0) {
@@ -1894,7 +1894,7 @@ static char FindNextDay(long timeNow, TIMER* pTimer, long* time)
 *  arguments   : (in)	long				= time to scan against
 *						TIMER*				= pointer to timer object
 *						long*				= pointer to located time
-*					  
+*
 *  returns     : 		void
 ************************************************************************
 */

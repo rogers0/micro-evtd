@@ -7,13 +7,13 @@
 #  /etc/micro_evtd/micro_evtd.event	- Provides user with scripted
 #                                     Micro event points
 #
-# Written by Bob Perry (2007) lb-source@users.sourceforge.net
+# Written by Bob Perry (2007-2009) lb-source@users.sourceforge.net
 # Updated by Bob Perry using code supplied by Per Andersson <avtobiff@gmail.com>
-#  
+#
 
 ### BEGIN INIT INFO
 # Provides:          micro_evtd
-# Required-Start:    
+# Required-Start:
 # Required-Stop:
 # Default-Start:     1 2 3 4 5
 # Default-Stop:      0 6
@@ -68,8 +68,8 @@ stop()
 	start-stop-daemon --stop --quiet --pidfile $PIDFILE
 	logger -t ${LOGTAG} -p ${LOGFACILITY} 'Stopped daemon micro_evtd'
 	log_end_msg $?
-	
-	if [ -n "$RUNLEVEL" ]; then	
+
+	if [ -n "$RUNLEVEL" ]; then
 	  if [ "${RUNLEVEL}" -eq 6 ]; then
 	    ##  Reboot
 	    CMD=000E
@@ -89,9 +89,9 @@ stop()
 	      log_daemon_msg "Firmware updating"
 	      sleep 5
 	    done
-		
+
 	    ${DAEMON} -q -s ${CMD}
-		
+
 		log_end_msg $?
 	  fi
 	fi
@@ -106,7 +106,7 @@ start)
 		log_end_msg 0
 		exit 1
 	fi
-	
+
 	start
 	;;
 stop)

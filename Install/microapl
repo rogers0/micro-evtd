@@ -1,11 +1,11 @@
 #!/bin/bash
 #
-# microapl Linkstation/Kuro Micro-Controller querry script 
+# microapl Linkstation/Kuro Micro-Controller querry script
 #
 # Other files used are:
 # /usr/local/sbin/micro_evtd
 #
-# Written by Bob Perry (2007) lb-source@users.sourceforge.net
+# Written by Bob Perry (2007-2009) lb-source@users.sourceforge.net
 #
 
 MICRO="micro_evtd -s"
@@ -302,10 +302,10 @@ parse()
 			  TEMP=0
 			  for i in $@ ; do
 			    case $i in
-			      power) TEMP=$(($TEMP | 1)) ;;            
-			      info)  TEMP=$(($TEMP | 2)) ;;            
-			      diag)  TEMP=$(($TEMP | 4)) ;;            
-			      link)  TEMP=$(($TEMP | 8)) ;;            
+			      power) TEMP=$(($TEMP | 1)) ;;
+			      info)  TEMP=$(($TEMP | 2)) ;;
+			      diag)  TEMP=$(($TEMP | 4)) ;;
+			      link)  TEMP=$(($TEMP | 8)) ;;
 			      off)   TEMP=0 ;;
 			      *)     TEMP="$i" ;;
 			    esac

@@ -1,7 +1,7 @@
 #!/bin/bash
 # micro_evtd Event Script
 #
-# Sample Event Script written by Bob Perry
+# Sample Event Script written by Bob Perry (2007-2009)
 # NOTE: Some of these events are not syncronous with the daemon.
 #
 # C - Transfer script to tmp location (RAM disk)
@@ -44,7 +44,7 @@ fan_fault() {
 	  0) logger -p user.emerg 'Fan failure detected' ; micro_evtd -s 013303 02540011 ;;
 	  1) logger -p user.emerg 'Fan failure recovered' ; micro_evtd -s 02540000 ;;
 	  2) micro_evtd -s 02540012 ; shutdown -h now "Due to fan failure"
-	esac 
+	esac
 }
 
 create_script() {
@@ -143,7 +143,7 @@ standby() {
 	  1) echo "Waking from standby" ; stop ;;
 	  2) rm -f /boot/pending_standby
 	     rm -f /boot/standby
-	     echo -n "$2" > /boot/pending_standby ;; 
+	     echo -n "$2" > /boot/pending_standby ;;
 	esac
 }
 

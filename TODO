@@ -1,0 +1,17 @@
+To Do List for Linkstation/Kuro/Terastation Micro Event daemon
+==============================================================
+
+* SBIN_PREFIX support
+  to allow installing into /usr/local/sbin (default), /usr/sbin or /sbin
+  * daemon and event script still use fix path /usr/local
+  * Makefile can already verify and install with different prefixes
+    (currently support for /usr/sbin and /sbin is disabled to avoid inconsistencies)
+
+* Check directory locations
+  * always refer to Filesystem Hierarchy Standard - http://www.pathname.com/fhs/
+  * use /tmp/micro_evtd to place temporary files to avoid collisions with other programs
+  * event script belongs inside sbin folder, not inside /etc
+
+* Review changes before release (always)
+  * run tests on clean stock firmware, Freelink 1.0rev2 and Freelink "Debian Lenny"
+    check that needed directories are available or created on them

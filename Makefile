@@ -36,11 +36,24 @@ INSTALL_PROGRAM = $(INSTALL)
 INSTALL_DATA = $(INSTALL) -m 644
 MKDIR = mkdir -p
 STRIP = $(CROSS_COMPILE)strip
+LN = ln
 
+# STOCKINFO is printed if it seems to be a stock installation, where
+# /etc/rcS.d/ is normally missing
+ifneq (,$(filter install,$(MAKECMDGOALS)))
+ STOCKINFO1 = "Looks *LIKE* a Stock Firmware installation:\\n\
+Please edit the file \"$(INSTALL_PATH)/etc/init.d/rcS\".\\n\
+Create a backup of the original file before editing.\\n\
+Comment out calls of miconapl, miconmon.sh and micon_setup.sh.\\n\
+Finally add a call of \"/etc/init.d/micro_evtd start\" to it."
+ STOCKINFO2 = "If *NOT* a Stock Firmware installation, e.g. Freelink/Debian:\\n\
+Add a link to micro_evtd init script in /etc/init.d/rcS\.\\n\
+$(LN) -s '../init.d/micro_evtd' '$(INSTALL_PATH)/etc/rcS.d/S70micro_evtd'"
+endif
 
 # Determine sbin and man path from SBIN_PREFIX for install/uninstall target
 ifneq (,$(filter install uninstall,$(MAKECMDGOALS)))
- SBIN_PREPATH := ${SBIN_PREFIX}
+ SBIN_PREPATH := $(SBIN_PREFIX)
  # a single slash is emptied
  ifeq (/,$(SBIN_PREPATH))
   SBIN_PREPATH :=
@@ -49,12 +62,12 @@ ifneq (,$(filter install uninstall,$(MAKECMDGOALS)))
  ifneq (/usr/local,$(SBIN_PREPATH))
 #  ifneq (/usr,$(SBIN_PREPATH))
 #   ifneq (,$(SBIN_PREPATH))
-    $(error SBIN_PREFIX "${SBIN_PREFIX}" is not supported. See make help.)
+    $(error SBIN_PREFIX "$(SBIN_PREFIX)" is not supported. See make help.)
 #   endif
 #  endif
  endif
  #
- SBIN_PATH := ${SBIN_PREPATH}/sbin
+ SBIN_PATH := $(SBIN_PREPATH)/sbin
 
  # Determine corresponding man path
  ifeq (/usr/local,$(SBIN_PREPATH))
@@ -117,6 +130,7 @@ install: micro_evtd uninstall
 	$(INSTALL_DATA) 'Install/microapl.8' '$(INSTALL_PATH)$(MAN_PATH)/man8'
 	$(INSTALL_DATA) 'Install/micro_evtd.conf.5' '$(INSTALL_PATH)$(MAN_PATH)/man5'
 
+ # System maintenance
  ifeq (,$(INSTALL_PATH))
 	@echo '...Update the man database'
 	-mandb
@@ -124,6 +138,16 @@ install: micro_evtd uninstall
 	@echo '...Start daemon'
 	-/etc/init.d/micro_evtd start
  endif
+
+ # Add to SysVInit system
+	@if [ -d '$(INSTALL_PATH)/etc/rcS.d' ]; \
+	 then \
+		$(LN) -s '../init.d/micro_evtd' '$(INSTALL_PATH)/etc/rcS.d/S70micro_evtd'; \
+	 else \
+		echo -e "$(STOCKINFO1)"; \
+		echo -e "$(STOCKINFO2)"; \
+	fi
+
 
 .PHONY: uninstall
 uninstall:
@@ -134,6 +158,7 @@ uninstall:
 	-rm -f '$(INSTALL_PATH)$(SBIN_PATH)/micro_evtd'
 	-rm -f '$(INSTALL_PATH)$(SBIN_PATH)/microapl'
 	-rm -f '$(INSTALL_PATH)/etc/init.d/micro_evtd'
+	-rm -f '$(INSTALL_PATH)/etc/rcS.d/S70micro_evtd'
 	-rm -f '$(INSTALL_PATH)/etc/micro_evtd/micro_evtd.event'
 	-rm -f '$(INSTALL_PATH)/etc/micro_evtd/micro_evtd.conf'
 	-rm -f '$(INSTALL_PATH)$(MAN_PATH)/man8/micro_evtd.8'

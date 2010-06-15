@@ -35,4 +35,12 @@ To Do List for Linkstation/Kuro/Terastation Micro Event daemon
     if [ -x "`which mandb 2>/dev/null`" ]; then
 
 * Misc
-  * Analyse and adopt changes from Debian package
+	* Analyse and adopt changes from Debian package 3.3.3
+	  casting.patch (already included)
+	  conffile.patch (already included)
+	  eventscript.patch (debian-specific, not important)
+	  makefile.patch (debian-specific, not important)
+	  microapl-bashisms.patch (important, needs testing)
+	  micro_evtd-default-conf.patch (looks wrong, as there's no /etc/defaults file anymore)
+	  pidfile.patch (interesting, needs analysis)
+	  script-paths.patch (looks wrong, as Linkstations use ramdisk for /tmp, so sub-folders get lost on reboot)

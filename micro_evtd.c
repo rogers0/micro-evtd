@@ -18,6 +18,10 @@
 * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 */
 
+/*
+* $Id$
+*/
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -48,6 +52,7 @@
 #include <sys/resource.h>
 
 #include "version.h"
+#include "revision.h"
 
 // Event message definitions
 #define FAN_FAULT		'4'
@@ -1696,7 +1701,11 @@ int main(int argc, char *argv[])
 			break;
 		case 'v':
 			--argc;
+#ifdef REVISION
+			printf("%s %s (%s)\n", strVersion, VERSION, REVISION);
+#else
 			printf("%s %s\n", strVersion, VERSION);
+#endif
 			exit(0);
 			break;
 		case 'q':

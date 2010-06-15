@@ -1,5 +1,9 @@
 TITLE=Linkstation/Kuro/Terastation Micro Event daemon
 
+#
+# $Id: $
+#
+
 # CROSS_COMPILE specifies the prefix used for all executables used
 # during compilation. Only gcc and related bin-utils executables
 # are prefixed with $(CROSS_COMPILE).
@@ -81,7 +85,38 @@ endif
 .PHONY: all
 all: micro_evtd
 
-micro_evtd: micro_evtd.c version.h
+# Try to determine the current revision and if it is modified in any form.
+#
+# If Subversion is not available or the revision can not be determined
+# (e.g. due to source being from an export or tar ball), and...
+# a) revision.h does not exist:
+#      create revision.h with #undef REVISION
+# b) revision.h exists:
+#      do nothing, so possible information added by the user is not destroyed
+.PHONY: revision
+revision:
+	@REV= ; \
+	if [ -x "`which svn 2>/dev/null`" ] ; \
+	 then \
+		REV="r$$(svn info -r COMMITTED | awk '/^Revision:/ { print $$2 }')" ; \
+		REV2="$$(svnversion)" ; \
+		[ "$${REV2: -1:1}" == "M" ] && REV="$${REV}M" ; \
+	fi ; \
+	if [ -n "$$REV" ] ; \
+	 then \
+		REV="#define REVISION \"$$REV\"" ; \
+	 elif [ ! -f 'revision.h' ] ; \
+	  then \
+		REV='#undef REVISION' ; \
+	fi ; \
+	if [ -n "$$REV" ] ; \
+	 then \
+		grep -e "$$REV" revision.h 1>/dev/null 2>/dev/null || echo "$$REV" >revision.h ; \
+	fi
+
+revision.h: revision
+
+micro_evtd: micro_evtd.c version.h revision.h
 	$(CC) $(CFLAGS) micro_evtd micro_evtd.c
 	$(STRIP) --strip-unneeded micro_evtd
 
@@ -109,22 +144,22 @@ clean:
 .PHONY: install
 install: micro_evtd uninstall
  # Install executable and controller script
-	@if [ ! -d '$(INSTALL_PATH)$(SBIN_PATH)' ]; then $(MKDIR) '$(INSTALL_PATH)$(SBIN_PATH)' ; fi
+	@if [ ! -d '$(INSTALL_PATH)$(SBIN_PATH)' ] ; then $(MKDIR) '$(INSTALL_PATH)$(SBIN_PATH)' ; fi
 	$(INSTALL_PROGRAM) 'micro_evtd' '$(INSTALL_PATH)$(SBIN_PATH)'
 	$(INSTALL_PROGRAM) 'Install/microapl' '$(INSTALL_PATH)$(SBIN_PATH)'
 
  # Install daemon script
-	@if [ ! -d '$(INSTALL_PATH)/etc/init.d' ]; then $(MKDIR) '$(INSTALL_PATH)/etc/init.d' ; fi
+	@if [ ! -d '$(INSTALL_PATH)/etc/init.d' ] ; then $(MKDIR) '$(INSTALL_PATH)/etc/init.d' ; fi
 	$(INSTALL_PROGRAM) -T 'Install/micro_evtd.init' '$(INSTALL_PATH)/etc/init.d/micro_evtd'
 
  # Install event script and configuration
-	@if [ ! -d '$(INSTALL_PATH)/etc/micro_evtd' ]; then $(MKDIR) '$(INSTALL_PATH)/etc/micro_evtd' ; fi
+	@if [ ! -d '$(INSTALL_PATH)/etc/micro_evtd' ] ; then $(MKDIR) '$(INSTALL_PATH)/etc/micro_evtd' ; fi
 	$(INSTALL_PROGRAM) 'Install/micro_evtd.event' '$(INSTALL_PATH)/etc/micro_evtd'
 	$(INSTALL_DATA) 'Install/micro_evtd.conf' '$(INSTALL_PATH)/etc/micro_evtd'
 
  # Install man pages
-	@if [ ! -d '$(INSTALL_PATH)$(MAN_PATH)/man5' ]; then $(MKDIR) '$(INSTALL_PATH)$(MAN_PATH)/man5' ; fi
-	@if [ ! -d '$(INSTALL_PATH)$(MAN_PATH)/man8' ]; then $(MKDIR) '$(INSTALL_PATH)$(MAN_PATH)/man8' ; fi
+	@if [ ! -d '$(INSTALL_PATH)$(MAN_PATH)/man5' ] ; then $(MKDIR) '$(INSTALL_PATH)$(MAN_PATH)/man5' ; fi
+	@if [ ! -d '$(INSTALL_PATH)$(MAN_PATH)/man8' ] ; then $(MKDIR) '$(INSTALL_PATH)$(MAN_PATH)/man8' ; fi
 	$(INSTALL_DATA) 'Install/micro_evtd.8' '$(INSTALL_PATH)$(MAN_PATH)/man8'
 	$(INSTALL_DATA) 'Install/micro_evtd.event.8' '$(INSTALL_PATH)$(MAN_PATH)/man8'
 	$(INSTALL_DATA) 'Install/microapl.8' '$(INSTALL_PATH)$(MAN_PATH)/man8'
@@ -140,12 +175,12 @@ install: micro_evtd uninstall
  endif
 
  # Add to SysVInit system
-	@if [ -d '$(INSTALL_PATH)/etc/rcS.d' ]; \
+	@if [ -d '$(INSTALL_PATH)/etc/rcS.d' ] ; \
 	 then \
-		$(LN) -s '../init.d/micro_evtd' '$(INSTALL_PATH)/etc/rcS.d/S70micro_evtd'; \
+		$(LN) -s '../init.d/micro_evtd' '$(INSTALL_PATH)/etc/rcS.d/S70micro_evtd' ; \
 	 else \
-		echo -e "$(STOCKINFO1)"; \
-		echo -e "$(STOCKINFO2)"; \
+		echo -e "$(STOCKINFO1)" ; \
+		echo -e "$(STOCKINFO2)" ; \
 	fi
 
 
@@ -153,7 +188,7 @@ install: micro_evtd uninstall
 uninstall:
  ifeq (,$(INSTALL_PATH))
 	@echo '...Ensure daemon is stopped'
-	@if [ -e '/etc/init.d/micro_evtd' ]; then '/etc/init.d/micro_evtd' stop ; fi
+	@if [ -e '/etc/init.d/micro_evtd' ] ; then '/etc/init.d/micro_evtd' stop ; fi
  endif
 	-rm -f '$(INSTALL_PATH)$(SBIN_PATH)/micro_evtd'
 	-rm -f '$(INSTALL_PATH)$(SBIN_PATH)/microapl'

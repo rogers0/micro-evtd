@@ -18,14 +18,18 @@
 # NOTE:
 # shutdown calls will operate on stock system but will ignore parameters
 
-PATH=/usr/local/sbin:/usr/local/bin:/bin:/usr/bin:/sbin
+#
+# $Id: $
+#
+
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 if [ "$1" = "C" ]; then
   TMP=$5
   ## Ensure tmp path is valid
   LEN=${#TMP}-1
   if [ $'\r' = "${TMP:${LEN}:1}" ]; then TMP=${TMP:0:$LEN} ; fi
-  if [ ! -d ${TMP} ]; then TMP=/tmp ; fi
+  if [ ! -d ${TMP} ]; then TMP=/tmp ; fi	# Linkstations have a ramdisk for /tmp, so sub-folders get lost
 else
   TMP=`dirname $0`
   DEBUG=$6

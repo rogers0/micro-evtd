@@ -9,7 +9,9 @@ To Do List for Linkstation/Kuro/Terastation Micro Event daemon
 
 * Check directory locations
   * always refer to Filesystem Hierarchy Standard - http://www.pathname.com/fhs/
-  * use /tmp/micro_evtd to place temporary files to avoid collisions with other programs
+  - use /tmp/micro_evtd to place temporary files to avoid collisions with other programs
+    Linkstations have a ramdisk for /tmp, so sub-folders get lost
+    And the ramdisk is the reason for the script copy, to avoid permanent disk accessa and allow the disk to sleep.
   * event script belongs inside sbin folder, not inside /etc
     event script copies itself to tmp folder; use $0 instead of fix path
     micro_evtd.c references event script too; no path and use PATH search, problems?

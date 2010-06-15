@@ -11,6 +11,10 @@
 # Updated by Bob Perry using code supplied by Per Andersson <avtobiff@gmail.com>
 #
 
+#
+# $Id: $
+#
+
 ### BEGIN INIT INFO
 # Provides:          micro_evtd
 # Required-Start:
@@ -29,7 +33,7 @@ PIDFILE=/var/run/micro_evtd.pid
 
 [ -x /usr/local/sbin/${DAEMON}  ] || exit 0
 
-PATH=/bin:/sbin:/usr/bin:usr/sbin:/usr/local/bin:/usr/local/sbin
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 . /lib/lsb/init-functions
 

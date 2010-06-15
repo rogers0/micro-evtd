@@ -1,3 +1,31 @@
+(alpha)  Matthias Bücher (maddes@users.sourceforge.net)
+
+	* version.h (VERSION):3.4 "Clean-Up"
+
+	* Set version to 3.4 to avoid any mixups with previous releases on the
+	  NAS-Central forum.
+
+	* micro_evtd.c:
+	  - Simplify fan speed monitoring and calculations. (lb-source)
+	  - Correct timer issues when using DelayedStandby. (lb-source)
+	  - Correction for re-check on DelayedStandby. (lb-source)
+	  - Corrections to signed values. (lb-source)
+	  - Allow redirect without buffering printf output. (lb-source)
+	  - Enhanced verion output with revision. (maddes)
+	  - Increased path length for log and tmp up to 39 chars. (maddes)
+	  - Added size check also to log path. (maddes)
+
+	* Install/micro_evtd.event:
+	  - Add fan speed calculation. (lb-source)
+
+	* Makefile:
+	  - Updated Makefile to make standards. (maddes)
+	  - Allow cross-compilation via CROSS_COMPILE. (maddes)
+	  - Allow installation for build roots via INSTALL_PATH. (maddes)
+	    Targets "install" and "uninstall".
+	  - Allow overwriting of CFLAGS. (maddes)
+	  - Added target "help" to list all possible targets and variables.
+
 2009-02-18  Bob Perry (lb-source@users.sourceforge.net)
 
 	* version.h (VERSION):3.3

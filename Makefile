@@ -34,7 +34,7 @@ SBIN_PREFIX ?= /usr/local
 
 # Make variables (CC, etc...)
 CC = $(CROSS_COMPILE)gcc
-CFLAGS ?= -Wall -s -Os -o
+CFLAGS ?= -Wall -s -Os
 INSTALL ?= install
 INSTALL_PROGRAM = $(INSTALL)
 INSTALL_DATA = $(INSTALL) -m 644
@@ -117,24 +117,24 @@ revision:
 revision.h: revision
 
 micro_evtd: micro_evtd.c version.h revision.h
-	$(CC) $(CFLAGS) micro_evtd micro_evtd.c
+	$(CC) $(CFLAGS) -o micro_evtd micro_evtd.c
 	$(STRIP) --strip-unneeded micro_evtd
 
 .PHONY: static
 static: micro_evtd.c version.h
  # Static build for the initrd/stock systems
-	$(CC) -static $(CFLAGS) micro_evtd micro_evtd.c
+	$(CC) -static $(CFLAGS) -o micro_evtd micro_evtd.c
 	$(STRIP) --strip-unneeded micro_evtd
 
 .PHONY: ts
 ts: micro_evtd.c version.h
-	$(CC) $(CFLAGS) micro_evtd micro_evtd.c -DTS
+	$(CC) $(CFLAGS) -o micro_evtd micro_evtd.c -DTS
 	$(STRIP) --strip-unneeded micro_evtd
 
 .PHONY: maintainer-test
 maintainer-test: micro_evtd.c version.h
 	@echo 'This command is intended for maintainer use only'
-	$(CC) $(CFLAGS) micro_evtd micro_evtd.c -DTEST
+	$(CC) $(CFLAGS) -o micro_evtd micro_evtd.c -DTEST
 	$(STRIP) --strip-unneeded micro_evtd
 
 .PHONY: clean

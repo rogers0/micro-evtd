@@ -19,7 +19,7 @@
 # shutdown calls will operate on stock system but will ignore parameters
 
 #
-# $Id: $
+# $Id$
 #
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

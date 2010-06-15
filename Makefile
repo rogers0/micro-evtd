@@ -1,7 +1,7 @@
 TITLE=Linkstation/Kuro/Terastation Micro Event daemon
 
 #
-# $Id: $
+# $Id$
 #
 
 # CROSS_COMPILE specifies the prefix used for all executables used

@@ -1,28 +1,26 @@
 To Do List for Linkstation/Kuro/Terastation Micro Event daemon
 ==============================================================
 
+* Where does "<TMP>/in_standby" come from?
+  Is something missing in the repository? Maybe files of the initrd part?
+
+* Create correct tgz files for man pages via Makefile and place correctly with "install" target
+
 * SBIN_PREFIX support
   to allow installing into /usr/local/sbin (default), /usr/sbin or /sbin
   * daemon script uses fix path /usr/local
   * Makefile can already verify and install with different prefixes
     (currently support for /usr/sbin and /sbin is disabled to avoid inconsistencies)
 
-* Check directory locations
+* Check directory locations and file names
   * always refer to Filesystem Hierarchy Standard - http://www.pathname.com/fhs/
-  - use /tmp/micro_evtd to place temporary files to avoid collisions with other programs
-    Linkstations have a ramdisk for /tmp, so sub-folders get lost
-    And the ramdisk is the reason for the script copy, to avoid permanent disk accessa and allow the disk to sleep.
   * event script belongs inside sbin folder, not inside /etc
     event script copies itself to tmp folder; use $0 instead of fix path
     micro_evtd.c references event script too; no path and use PATH search, problems?
     or add new config item SBIN=/usr/local/sbin to /etc/micro_evtd.conf; very flexible, no recompilation necessary; default?
-
-* Review changes before release (always)
-  * run tests on clean stock firmware, Freelink 1.0rev2 and Freelink "Debian Lenny"
-    check that needed directories are available or created on them
-
-* Versioning
-  * Add last committed svn revision to version.h (via Makefile)
+  - use /tmp/micro_evtd to place temporary files to avoid collisions with other programs
+    Linkstations have a ramdisk for /tmp, so sub-folders get lost
+    And the ramdisk is the reason for the script copy, to avoid permanent disk accessa and allow the disk to sleep.
 
 * Install
   * RC links
@@ -33,6 +31,7 @@ To Do List for Linkstation/Kuro/Terastation Micro Event daemon
   * man pages
     Adopt man db update
     if [ -x "`which mandb 2>/dev/null`" ]; then
+  * Add target to update InitRd if /initrd exists in install path
 
 * Misc
 	* Analyse and adopt changes from Debian package 3.3.3
@@ -42,5 +41,16 @@ To Do List for Linkstation/Kuro/Terastation Micro Event daemon
 	  makefile.patch (debian-specific, not important)
 	  microapl-bashisms.patch (important, needs testing)
 	  micro_evtd-default-conf.patch (looks wrong, as there's no /etc/defaults file anymore)
-	  pidfile.patch (interesting, needs analysis)
+	  pidfile.patch (interesting, needs analysis, there's pid file handling in micro_evtd.init)
 	  script-paths.patch (looks wrong, as Linkstations use ramdisk for /tmp, so sub-folders get lost on reboot)
+
+* Review changes before release (always)
+  * run tests on clean stock firmware, Freelink 1.0rev2 and Freelink "Debian Lenny"
+    check that needed directories are available or created on them
+
+
+
+Done:
+=====
++ Versioning
+  + Add last committed svn revision to version.h (via Makefile)

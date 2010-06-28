@@ -37,7 +37,7 @@ note_to_freq()
 	fi
 
 	# Build expression and pass it to sed, due to evaluation.
-	expr="s/^.{$(($octave*4))\}\(.\{4\}\).*/\1/"
+	expr="s/^.\{$(($octave*4))\}\(.\{4\}\).*/\1/"
 	local result="$(echo $NOTESTRING | sed $expr)"
 	if [ -n "$result" ] ; then
 	  echo -n $result
@@ -193,6 +193,7 @@ parse()
 			  shift
 			  parse led_set_cpu_mcon 15
 			  $MICRO_q 0253$(note_to_freq $1)
+			  shift
 			  parse bz_on on
 			  for i in $@ ; do
 			    $MICRO_q 0253$(note_to_freq $i)
@@ -216,6 +217,7 @@ parse()
 			  shift
 			  shift
 			  $MICRO_q 0253$(note_to_freq $1)
+			  shift
 			  parse bz_on on
 			  for i in $@ ; do
 			    $MICRO_q 0253$(note_to_freq $i)

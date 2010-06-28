@@ -18,13 +18,17 @@
 	* Install/micro_evtd.event:
 	  - Add fan speed calculation. (lb-source)
 
+	* Install/microapl:
+	  - Fixed buzzer operation. (Noriaki Mitsunaga)
+	  - Replaced bashisms. (Per Andersson)
+
 	* Makefile:
 	  - Updated Makefile to make standards. (maddes)
 	  - Allow cross-compilation via CROSS_COMPILE. (maddes)
 	  - Allow installation for build roots via INSTALL_PATH. (maddes)
 	    Targets "install" and "uninstall".
 	  - Allow overwriting of CFLAGS. (maddes)
-	  - Added target "help" to list all possible targets and variables.
+	  - Added target "help" to list all possible targets and variables. (maddes)
 
 2009-02-18  Bob Perry (lb-source@users.sourceforge.net)
 

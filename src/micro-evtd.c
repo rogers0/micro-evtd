@@ -51,9 +51,6 @@
 
 #include <sys/resource.h>
 
-#include "version.h"
-#include "revision.h"
-
 // Event message definitions
 #define FAN_FAULT		'4'
 #define CP_SCRIPT		'C'
@@ -92,6 +89,8 @@
 #define TWENTYFOURHR        TWELVEHR*2
 #define FIVE_MINUTES		5*60
 
+#define CMDLINE_LENGTH		255
+
 /**
 Macro event object definition
 */
@@ -102,10 +101,12 @@ typedef struct _OFF_TIMER {
 } TIMER;
 
 // Some global variables with default values
-const char strVersion[]="Micro-monitor daemon Version";
+const char strTitle[]="Micro Event Daemon for LSP/LSL/Kuro/TS";
+const char strVersion[]="3.4 alpha";
+char strRevision[]="$Revision$";
 const char micro_device[]="/dev/ttyS1";
-const char micro_conf[]="/etc/micro_evtd/micro_evtd.conf";
-const char micro_lock[]="/var/lock/micro_evtd";
+const char micro_conf[]="/etc/micro-evtd.conf";
+const char micro_lock[]="/var/lock/micro-evtd";
 const char strokTest[] = ",=\n";
 TIMER* poffTimer=NULL;
 TIMER* ponTimer=NULL;
@@ -154,7 +155,7 @@ static void open_serial(void);
 static int writeUART(int, unsigned char*);
 static void check_configuration(void);
 static void fan_set_speed(char);
-static void micro_evtd_main(void);
+static void daemon_main(void);
 static void parse_configuration(void);
 static int execute_command2(char, char*, char, char, long);
 static int execute_command(char, char, char);
@@ -601,17 +602,20 @@ static void system_set_watchdog(char cTimer)
 */
 static int execute_command2(char cmd, char* cmdstring, char type, char cmd2, long cmd3)
 {
-	char strEventScript[80];
+	char strEventScript[CMDLINE_LENGTH];
+	size_t length;
 
 	// Create the command line
-	sprintf(strEventScript, "/%s/micro_evtd.event %c %d %ld %s %s %d %c",
-	(CP_SCRIPT ==  cmd? "etc/micro_evtd" : strTmpPath),
-	cmd,
-	cmd2,
-	cmd3,
-	cmdstring,
-	(CP_SCRIPT ==  cmd? strTmpPath : log_path),
-	iDebugLevel, (CALL_NO_WAIT == type ? '&' : ' '));
+	length = snprintf(strEventScript, CMDLINE_LENGTH, "%smicro-evtd.event %c %d %ld %s %s %d %c",
+		(CP_SCRIPT == cmd ? "" : strTmpPath),	// for copying call the event script via PATH
+		cmd,
+		cmd2,
+		cmd3,
+		cmdstring,
+		(CP_SCRIPT == cmd ? strTmpPath : log_path),	// for copying log use tmp folder
+		iDebugLevel,
+		(CALL_NO_WAIT == type ? '&' : ' '));
+//ToDo:	if ( length >= CMDLINE_LENGTH ) { error handling }
 
 	// Invoke request
 	return system(strEventScript);
@@ -1083,7 +1087,7 @@ static int check_status(void)
 			}
 		}
 
-		// Do we need to update my_status?
+		// Do we need to update status file?
 		if (iUpdate) {
 			char str[5];
 			sprintf(str, "%d", iFanStops);
@@ -1097,7 +1101,7 @@ static int check_status(void)
 /**
 ************************************************************************
 *
-*  function    : micro_evtd_main()
+*  function    : daemon_main()
 *
 *  description : Main processing loop.
 *
@@ -1107,7 +1111,7 @@ static int check_status(void)
 *
 ************************************************************************
 */
-static void micro_evtd_main(void)
+static void daemon_main(void)
 {
 	int dooze = 8;
 	char iCount = 0;
@@ -1701,11 +1705,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'v':
 			--argc;
-#ifdef REVISION
-			printf("%s %s (%s)\n", strVersion, VERSION, REVISION);
-#else
-			printf("%s %s\n", strVersion, VERSION);
-#endif
+			printf("%s %s (%s)\n", strTitle, strVersion, strRevision);
 			exit(0);
 			break;
 		case 'q':
@@ -1796,7 +1796,7 @@ int main(int argc, char *argv[])
 	parse_configuration();
 
 	// Go do our thing
-	micro_evtd_main();
+	daemon_main();
 
 	return 0;
 }

@@ -1,12 +1,12 @@
-.\" Title: micro_evtd
+.\" Title: micro-evtd
 .\"Author: Bob Perry
-.TH MICRO_EVTD 8 "November 2008" "3.3" "User Commands"
+.TH MICRO-EVTD 8 "November 2008" "3.3" "User Commands"
 .nh
 .ad l
 .SH NAME
-micro_evtd \- Linkstation/Kuro/Terastation Micro Event Daemon
+micro-evtd \- Linkstation/Kuro/Terastation Micro Event Daemon
 .SH SYNOPSIS
-micro_evtd
+micro-evtd
 .RB [ \-s\ \fIstring1,string2,..\fR ]
 .RB [ \-c ]
 .RB [ \-v ]
@@ -15,12 +15,12 @@ micro_evtd
 .RB [ \-w\ \fIseconds\fR ]
 .RB [ \-e ]
 .SH DESCRIPTION
-.IR mico_evtd
+.IR micro-evtd
 is an operating system daemon and should be started from /etc/init.d or
 directly.  It will return immediately, so you don't need to start
 it with '&'.
 .PP
-.IR micro_evtd
+.IR micro-evtd
 is a simple and small user space interface to the Linkstation/Kuro/Terastation
 Micro controller which is fitted to the ARM series of NAS boxes. It does not
 have a lot of features but it's main task is to provide 'keep-alive'
@@ -68,7 +68,7 @@ This is used by the standby process.  The daemon will wait until an event
 occurs to awaken the box.
 .SH BUTTON OPERATION
 All events, whether mechanical button operation, or software reset/shutdown
-actions are routed through \fBmicro_evtd.event(8)\fR
+actions are routed through \fBmicro-evtd.event(8)\fR
 .TP
 \fIPOWER\fR
 On release, a button event message is sent.
@@ -80,24 +80,24 @@ If the button is held for more than 4 seconds then an alternating sequence
 event is sent.
 .SH FILES
 .RS 0
-/etc/micro_evtd/micro_evtd.conf
+/etc/micro-evtd.conf
 .RE
 .RS 0
-/etc/micro_evtd/micro_evtd.event
+micro-evtd.event
 .RS 0
-/boot/standby_pending
+/boot/pending_standby
 .RE
 .RS 0
 /boot/standby
 .RE
 .RS 0
-<TMP>/my_status
+<TMP>/micro-evtd.status
 .RE
 .RS 0
-<TMP>/my_standby
+<TMP>/micro-evtd.standby
 .RE
 .SH SEE ALSO
 .TP
-\fBmicroapl\fR(8), \fBmicro_evtd.conf\fR(5), \fBmicro_evtd.event\fR(8).
+\fBmicroapl\fR(8), \fBmicro-evtd.conf\fR(5), \fBmicro-evtd.event\fR(8).
 .SH AUTHOR
 Bob Perry <lb-source@users.sourceforge.net>

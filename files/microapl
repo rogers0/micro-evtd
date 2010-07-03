@@ -3,13 +3,13 @@
 # microapl Linkstation/Kuro Micro-Controller querry script
 #
 # Other files used are:
-#   micro_evtd program, usually in /usr/local/sbin/
+#   micro-evtd program
 #
 # Written by Bob Perry (2007-2009) lb-source@users.sourceforge.net
 #
 
-MICRO="micro_evtd -s"
-MICRO_q="micro_evtd -q -s"
+MICRO="micro-evtd -s"
+MICRO_q="micro-evtd -q -s"
 
 note_to_freq()
 {
@@ -63,7 +63,7 @@ parse()
 			$MICRO_q 000D ;;
 		skip_standby)
 			if [ -f /boot/pending_standby ] ; then
-			  PID=`pidof micro_evtd`
+			  PID=`pidof micro-evtd`
 			  /bin/kill -SIGINT ${PID}
 			  echo "Pending standby delay activated"
 			else
@@ -71,7 +71,7 @@ parse()
 			fi ;;
 		delay_standby)
 			if [ -f /boot/pending_standby ] ; then
-			  PID=`pidof micro_evtd`
+			  PID=`pidof micro-evtd`
 			  COUNT=1
 			  ## Delay amount?
 			  if [ "$2" != "" ] ; then
@@ -92,14 +92,14 @@ parse()
 			fi ;;
 		standby_remaining)
 			if [ -f /boot/pending_standby ] ; then
-			  PID=`pidof micro_evtd`
+			  PID=`pidof micro-evtd`
 			  /bin/kill -SIGHUP ${PID}
 			else
 			  echo "Not supported function"
 			fi ;;
 		standby)
 			if [ -f /boot/pending_standby ] ; then
-			  micro_evtd -q -s 02520100
+			  micro-evtd -q -s 02520100
 		      mv -f /boot/pending_standby /boot/standby
 			  reboot
 			else

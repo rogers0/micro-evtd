@@ -1,11 +1,11 @@
 #!/bin/bash
-# micro_evtd Event Script
+# micro-evtd Event Script
 #
 # Sample Event Script written by Bob Perry (2007-2009)
 # NOTE: Some of these events are not syncronous with the daemon.
 #
 # C - Transfer script to tmp location (RAM disk)
-# I - Dump fan speed and temp to tmp file my_status
+# I - Dump fan speed and temperature to status file
 # 4 - Fan failure logic
 # O - Overheat logic
 # B - Button control
@@ -36,8 +36,8 @@ else
   LOG=$5
   if [ "$DEBUG" -gt 0 ] && [ -d "$LOG" ]; then
 	  case "$DEBUG" in
-	     1) if [ "$1" = "I" ]; then echo "`date` $2,$3,$4" >> $LOG/micro_evtd.log ; fi ;;
-	     2) echo "`date` $1 $2 $3 $4" >> $LOG/micro_evtd.log
+	     1) if [ "$1" = "I" ]; then echo "`date` $2,$3,$4" >> $LOG/micro-evtd.log ; fi ;;
+	     2) echo "`date` $1 $2 $3 $4" >> $LOG/micro-evtd.log
       esac
   fi
 fi
@@ -45,32 +45,33 @@ fi
 fan_fault() {
 	## Determine fan failure message and event
 	case $1 in
-	  0) logger -p user.emerg 'Fan failure detected' ; micro_evtd -s 013303 02540011 ;;
-	  1) logger -p user.emerg 'Fan failure recovered' ; micro_evtd -s 02540000 ;;
-	  2) micro_evtd -s 02540012 ; shutdown -h now "Due to fan failure"
+	  0) logger -p user.emerg 'Fan failure detected' ; micro-evtd -s 013303 02540011 ;;
+	  1) logger -p user.emerg 'Fan failure recovered' ; micro-evtd -s 02540000 ;;
+	  2) micro-evtd -s 02540012 ; shutdown -h now "Due to fan failure"
 	esac
 }
 
 create_script() {
 	## Ensure path does not exist
-	rm -f $TMP/micro_evtd.event
+	rm -f $TMP/micro-evtd.event
 	## Create RAM version of control file
-	cp -a /etc/micro_evtd/micro_evtd.event $TMP/.
+	EVENT=`which micro-evtd.event 2>/dev/null`
+	cp -a "$EVENT" $TMP/.
 	## Stop flashing LEDs and clear error codes
-	micro_evtd -q -s 02520000,02540000
+	micro-evtd -q -s 02520000,02540000
 }
 
 over_heat() {
 	## Overheat detection and notification
 	if [ "$1" -eq 0 ]; then
-	  micro_evtd -s 02540100
+	  micro-evtd -s 02540100
 	elif [ "$1" -eq 1 ]; then
 	  ## Push full speed in-case of dud temperature reading
-	  micro_evtd -s 013303
+	  micro-evtd -s 013303
 	elif [ "$1" -eq 3 ]; then
 	  logger -p user.emerg -i 'Overheat detected'
 	  ## Indicate error
-	  micro_evtd -s 02540112
+	  micro-evtd -s 02540112
 	elif [ "$1" -gt 15 ]; then
 	  shutdown -h -P now "Due to overheat"
 	fi
@@ -79,14 +80,14 @@ over_heat() {
 dump_info() {
 	## Temp and fan speed info
 	let "rpm = $2 * 30"
-	echo -e "Temp=$1[C-Deg]\nFan=${rpm}rpm\nFan Failures=$3" > $TMP/my_status
+	echo -e "Temp=$1[C-Deg]\nFan=${rpm}rpm\nFan Failures=$3" > $TMP/micro-evtd.status
 }
 
 stop() {
-	## Check if we are in standby
-	if [ -a $TMP/in_standby ]; then
+	## Check if we are in standby (file created by /linuxrc of initrd)
+	if [ -a $TMP/micro-evtd.in_standby ]; then
 	  ## Windup, lights on and no flashing
-	  micro_evtd -s 013B03,02500000,02520000
+	  micro-evtd -s 013B03,02500000,02520000
 	  ## Takes a while to wind up here
 	  sleep 30
 	  ## Add SCSI device to bus
@@ -100,7 +101,7 @@ stop() {
 	  umount -a
 	else
 	  ## Flashy light thing
-	  micro_evtd -q -s 02520100
+	  micro-evtd -q -s 02520100
 	  shutdown -h -P now
 	fi
 }
@@ -108,7 +109,7 @@ stop() {
 button() {
 	case "$2" in
 	  micon)  ## Some swift cooling please
-	    micro_evtd -q -s 013303,013000
+	    micro-evtd -q -s 013303,013000
 	    ## Micro IO
 	    case $1 in
 	      1)  stop ;;
@@ -121,8 +122,8 @@ button() {
 	     132) /usr/local/bin/initsw.sh ;;
 	     144) /usr/local/bin/ups_shutdown.sh ;;
 	     193) stop ;;
-	     200) micro_evtd -s 013003 ;;
-	     201) micro_evtd -s 013000 ;;
+	     200) micro-evtd -s 013003 ;;
+	     201) micro-evtd -s 013000 ;;
 	      *)
 	  esac
 	esac
@@ -131,17 +132,17 @@ button() {
 message() {
 	case "$1" in
 	  0) logger -p user.emerg 'Entering standby in less than 5 minutes'
-	     micro_evtd -s 02540F00 ;;
+	     micro-evtd -s 02540F00 ;;
 	  1) echo "Leaving standby in less than 5 minutes" ;;
 	 99) logger -p user.emerg 'Skipping current standby point'
-	     micro_evtd -s 02540000 ;;
+	     micro-evtd -s 02540000 ;;
 	esac
 }
 
 standby() {
 	case "$1" in
 	  0) logger -p user.emerg 'Shutting down for standby'
-	     micro_evtd -q -s 02520100
+	     micro-evtd -q -s 02520100
 	     mv -f /boot/pending_standby /boot/standby
 	     sync ; reboot ;;
 	  1) echo "Waking from standby" ; stop ;;
@@ -158,15 +159,15 @@ timer() {
 	  MINS=`expr $HOUR "*" 60`
 	  MINS=`expr $2 - $MINS`
 	  TIME=`printf "%02d:%02d" ${HOUR} ${MINS}`
-	  echo "Uptime left=${TIME}" > $TMP/my_standby
-	  if [ "$1" -gt 0 ];  then echo "DST=Yes" >> $TMP/my_standby ; fi
+	  echo "Uptime left=${TIME}" > $TMP/micro-evtd.standby
+	  if [ "$1" -gt 0 ];  then echo "DST=Yes" >> $TMP/micro-evtd.standby ; fi
 	else
-	  echo "Standby disabled" > $TMP/my_standby
+	  echo "Standby disabled" > $TMP/micro-evtd.standby
 	fi
 }
 
 pid() {
-	echo "$1" > /var/run/micro_evtd.pid
+	echo "$1" > /var/run/micro-evtd.pid
 }
 
 look() {

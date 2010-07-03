@@ -1,9 +1,12 @@
 (alpha)  Matthias Bücher (maddes@users.sourceforge.net)
 
-	* version.h (VERSION):3.4 "Clean-Up"
+	* version.h (VERSION): 3.4 "The Clean-Up Release"
 
 	* Set version to 3.4 to avoid any mixups with previous releases on the
 	  NAS-Central forum.
+
+	* Generally renamed micro_evtd (underscore) to micro-evtd (dash).
+	  Makefile has "removeold" target to get rid of all old stuff. (Maddes)
 
 	* micro_evtd.c:
 	  - Simplify fan speed monitoring and calculations. (lb-source)
@@ -11,24 +14,40 @@
 	  - Correction for re-check on DelayedStandby. (lb-source)
 	  - Corrections to signed values. (lb-source)
 	  - Allow redirect without buffering printf output. (lb-source)
-	  - Enhanced verion output with revision. (maddes)
-	  - Increased path length for log and tmp up to 39 chars. (maddes)
-	  - Added size check also to log path. (maddes)
+	  - Enhanced verion output with revision. (Maddes)
+	  - Increased path length for log and tmp up to 39 chars. (Maddes)
+	  - Added size check also to log path. (Maddes)
+	  - Increased string length for event script command line. (Maddes)
+	  - No fixed path for event script, so it will be found through PATH.
+	    Necessary for different sbin prefixes. (Maddes)
 
 	* Install/micro_evtd.event:
 	  - Add fan speed calculation. (lb-source)
+	  - Renamed "my_status" to "micro-evtd.status". (Maddes)
+	  - Renamed "my_standby" to "micro-evtd.standby". (Maddes)
+	  - Renamed "in_standby" to "micro-evtd.in_standby". (Maddes)
+	  - Install into sbin folder, so it can be found through PATH. (Maddes)
+	  - No fixed path in copy of event script, but it will be found via `which`
+	    through PATH. Necessary for different sbin prefixes. (Maddes)
+
+	* Install/micro_evtd.init:
+	  - No fixed path for daemon available check, it will be found via `which`
+	    through PATH. Necessary for different sbin prefixes. (Maddes)
 
 	* Install/microapl:
 	  - Fixed buzzer operation. (Noriaki Mitsunaga)
 	  - Replaced bashisms. (Per Andersson)
 
 	* Makefile:
-	  - Updated Makefile to make standards. (maddes)
-	  - Allow cross-compilation via CROSS_COMPILE. (maddes)
-	  - Allow installation for build roots via INSTALL_PATH. (maddes)
+	  - Updated Makefile to make standards. (Maddes)
+	  - Allow cross-compilation via CROSS_COMPILE. (Maddes)
+	  - Allow installation for build roots via INSTALL_PATH. (Maddes)
 	    Targets "install" and "uninstall".
-	  - Allow overwriting of CFLAGS. (maddes)
-	  - Added target "help" to list all possible targets and variables. (maddes)
+	  - Allow overwriting of CFLAGS. (Maddes)
+	  - Allow installation into another sbin folder than /usr/local/sbin via
+	    SBIN_PREFIX. (Maddes)
+	  - Added target "help" to list all possible targets and variables. (Maddes)
+	  - Install event script into sbin folder. (Maddes)
 
 2009-02-18  Bob Perry (lb-source@users.sourceforge.net)
 

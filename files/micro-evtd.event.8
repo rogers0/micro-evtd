@@ -1,15 +1,15 @@
-.\" Title: micro_evtd.event
+.\" Title: micro-evtd.event
 .\"Author: Bob Perry
-.TH MICRO_EVTD.EVENT 8 "February 2009" "3.3" "Event Usage"
+.TH MICRO-EVTD.EVENT 8 "February 2009" "3.3" "Event Usage"
 .nh
 .ad l
 .SH NAME
-micro_evtd.event \- Event script for micro_evtd
+micro-evtd.event \- Event script for micro-evtd
 .SH SYNOPSIS
-micro_evtd.event
+micro-evtd.event
 .RB [ \-s\ \fIoption1,option2,...\fR ]
 .SH DESCRIPTION
-The event script works as a front end for micro_evtd.
+The event script works as a front end for micro-evtd.
 .SH MESSAGE EVENTS
 The event system has been modified such that 99% of the daemon event system is
 pushed through the event script. A third parameter is supplied by the daemon
@@ -27,7 +27,7 @@ Overheat detection.
 .TP 5
 .IR I
 Updates
-.B my_status
+.B micro-evtd.status
 with temperature,fan speed and fan failure information.
 .TP 5
 .IR B
@@ -49,6 +49,6 @@ Create daemon PID file.
 Locate present process.
 .SH SEE ALSO
 .TP 5
-\fBmicroapl\fR(8), \fBmicro_evtd.conf\fR(5), \fBmicro_evtd\fR(8).
+\fBmicroapl\fR(8), \fBmicro-evtd.conf\fR(5), \fBmicro-evtd\fR(8).
 .SH AUTHOR
 Bob Perry <lb-source@users.sourceforge.net>

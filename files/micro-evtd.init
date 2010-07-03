@@ -1,11 +1,11 @@
 #!/bin/sh
 #
-# micro_evtd Linkstation/Kuro/Terastation Micro-Controller daemon
+# micro-evtd Linkstation/Kuro/Terastation Micro-Controller daemon
 #
 # Other files used are:
-#  /etc/micro_evtd/micro_evtd.conf	- Optional configuration file
-#  /etc/micro_evtd/micro_evtd.event	- Provides user with scripted
-#                                     Micro event points
+#  /etc/micro-evtd.conf	- Optional configuration file
+#  micro-evtd.event	    - Provides user with scripted
+#                         Micro event points
 #
 # Written by Bob Perry (2007-2009) lb-source@users.sourceforge.net
 # Updated by Bob Perry using code supplied by Per Andersson <avtobiff@gmail.com>
@@ -16,7 +16,7 @@
 #
 
 ### BEGIN INIT INFO
-# Provides:          micro_evtd
+# Provides:          micro-evtd
 # Required-Start:
 # Required-Stop:
 # Default-Start:     1 2 3 4 5
@@ -24,16 +24,16 @@
 # Short-Description: Daemon for Linkstation/Kuro/Terastation micro controller
 ### END INIT INFO
 
-DAEMON=micro_evtd
-NAME="micro_evtd"
+DAEMON=micro-evtd
+NAME="micro-evtd"
 DESC="MICRO watchdog daemon"
 LOGTAG=${DAEMON}
 LOGFACILITY=local0.info
-PIDFILE=/var/run/micro_evtd.pid
-
-[ -x /usr/local/sbin/${DAEMON}  ] || exit 0
+PIDFILE=/var/run/micro-evtd.pid
 
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+[ -x "`which ${DAEMON} 2>/dev/null`"  ] || exit 0
 
 . /lib/lsb/init-functions
 
@@ -45,7 +45,7 @@ running()
 	[ -z "$pid" ] && return 1
 	[ ! -d /proc/$pid ] && return 1
 	cmd=`cat /proc/$pid/cmdline | tr "\000" "\n"|head -n 1`
-	# No micro_evtd?
+	# No micro-evtd?
 	[ "$cmd" != "$DAEMON" ] && return 1
 
 	return 0
@@ -70,7 +70,7 @@ stop()
 {
 	log_daemon_msg "Stopping $DESC" "$NAME"
 	start-stop-daemon --stop --quiet --pidfile $PIDFILE
-	logger -t ${LOGTAG} -p ${LOGFACILITY} 'Stopped daemon micro_evtd'
+	logger -t ${LOGTAG} -p ${LOGFACILITY} 'Stopped daemon micro-evtd'
 	log_end_msg $?
 
 	if [ -n "$RUNLEVEL" ]; then

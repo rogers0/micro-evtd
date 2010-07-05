@@ -1,5 +1,5 @@
 /*
-* Linkstation/Kuro/Terastation ARM series Micro daemon
+* Micro Event Daemon for Linkstation Pro+Live/Kuro/Terastation ARM series
 *
 * Written by Bob Perry (2007-2009) lb-source@users.sourceforge.net
 *

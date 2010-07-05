@@ -40,8 +40,10 @@
 
 	* Makefile:
 	  - Updated Makefile to make standards. (Maddes)
+	    http://www.gnu.org/software/make/manual/
+	    http://www.gnu.org/prep/standards/ (chapter 7.2)
 	  - Allow cross-compilation via CROSS_COMPILE. (Maddes)
-	  - Allow installation for build roots via INSTALL_PATH. (Maddes)
+	  - Allow installation for build roots via DESTDIR. (Maddes)
 	    Targets "install" and "uninstall".
 	  - Allow overwriting of CFLAGS. (Maddes)
 	  - Allow installation into another sbin folder than /usr/local/sbin via

@@ -1,4 +1,4 @@
-TITLE := Micro Event Daemon for Linkstation Pro+Live/Kuro/Terastation
+TITLE := Micro Event Daemon for Linkstation Pro+Live/Kuro/Terastation ARM series
 PROGNAME := micro-evtd
 
 #
@@ -25,6 +25,7 @@ PROGNAME := micro-evtd
 
 # To understand makefiles check out:
 #   http://www.gnu.org/software/make/manual/
+#   http://www.gnu.org/prep/standards/
 #
 # Especially note the pitfalls inside rules with tabs for commands
 # and spaces for make's functions.
@@ -40,10 +41,10 @@ PROGNAME := micro-evtd
 # Default value for CROSS_COMPILE is not to prefix executables.
 CROSS_COMPILE ?=
 
-# INSTALL_PATH specifies a prefix for relocations required by build
+# DESTDIR specifies a prefix for relocations required by build
 # roots.  This is not defined in the makefile but the argument can be
 # passed to make if needed.
-INSTALL_PATH ?=
+DESTDIR ?=
 
 # EXTRATITLE allows to add an extra string to version display
 EXTRATITLE ?=
@@ -69,32 +70,32 @@ ifneq (/usr/local,$(SBIN_PREPATH))
  endif
 endif
 #
-SBIN_PATH := $(SBIN_PREPATH)/sbin
+sbindir := $(SBIN_PREPATH)/sbin
 
 # Determine corresponding man path
 ifeq (/usr/local,$(SBIN_PREPATH))
- MAN_PATH := /usr/local/share/man
+ mandir := /usr/local/share/man
 else
- MAN_PATH := /usr/share/man
+ mandir := /usr/share/man
 endif
 
 # STOCKINFO is printed if it seems to be a stock installation, where
 # /etc/rcS.d/ is normally missing
  STOCKINFO1 = "Looks *LIKE* a Stock Firmware installation:\\n\
-Please edit the file \"$(INSTALL_PATH)/etc/init.d/rcS\".\\n\
+Please edit the file \"$(DESTDIR)/etc/init.d/rcS\".\\n\
 Create a backup of the original file before editing.\\n\
 Comment out calls of miconapl, miconmon.sh and micon_setup.sh.\\n\
 Finally add a call of \"/etc/init.d/$(PROGNAME) start\" to it."
  STOCKINFO2 = "If *NOT* a Stock Firmware installation, e.g. Freelink/Debian:\\n\
 Add a link to $(PROGNAME) init script in /etc/init.d/rcS\.\\n\
-$(LN) -s '../init.d/$(PROGNAME)' '$(INSTALL_PATH)/etc/rcS.d/S70$(PROGNAME)'"
+$(LN) -s '../init.d/$(PROGNAME)' '$(DESTDIR)/etc/rcS.d/S70$(PROGNAME)'"
 
 
 # Make variables (CC, etc...)
 CC = $(CROSS_COMPILE)gcc
 LD = $(CROSS_COMPILE)gcc
 CFLAGS ?= -Wall -Os
-LDFLAGS ?= -Wall -s
+LDFLAGS ?=
 INSTALL ?= install
 INSTALL_PROGRAM = $(INSTALL)
 INSTALL_DATA = $(INSTALL) -m 644
@@ -106,49 +107,50 @@ LN = ln
 # Target-dependent values for special builds
 # also allow to merge special builds, e.g. clean.static, all.static.extra
 # only shortcoming is that <progname>.static.extra doesn't work
-PREFIX :=
+TRGTSUFFIX :=
+CPPFLAGS ?=
 # --> Static build for the initrd/stock systems
 ifneq (,$(filter static %.static,$(MAKECMDGOALS))$(findstring .static.,$(MAKECMDGOALS)))
- PREFIX := $(PREFIX).static
+ TRGTSUFFIX := $(TRGTSUFFIX).static
  override EXTRATITLE += STATIC
  override LDFLAGS += -static
 endif
 # --> Build for Terastation (see forum thread)
 ifneq (,$(filter ts %.ts,$(MAKECMDGOALS))$(findstring .ts.,$(MAKECMDGOALS)))
- PREFIX := $(PREFIX).ts
+ TRGTSUFFIX := $(TRGTSUFFIX).ts
  override EXTRATITLE += TS
- override CFLAGS += -DTS
+ override CPPFLAGS += -DTS
 endif
 # --> Maintainer Test
 ifneq (,$(filter test %.test,$(MAKECMDGOALS))$(findstring .test.,$(MAKECMDGOALS)))
- PREFIX := $(PREFIX).test
+ TRGTSUFFIX := $(TRGTSUFFIX).test
  override EXTRATITLE += MAINTAINER TEST
- override CFLAGS += -DTEST
+ override CPPFLAGS += -DTEST
 endif
 
 # Add extra title to CFLAGS
 override EXTRATITLE := $(strip $(EXTRATITLE))
 ifneq (,$(EXTRATITLE))
- override CFLAGS += -DEXTRATITLE="\"$(EXTRATITLE)\""
+ override CPPFLAGS += -DEXTRATITLE="\"$(EXTRATITLE)\""
 endif
 
 
 # Build variables
-BINDIR := bin$(PREFIX)
-PROG := $(BINDIR)/$(PROGNAME)
+PROGDIR := bin$(TRGTSUFFIX)
+PROG := $(PROGDIR)/$(PROGNAME)
 
-SRCDIR := src
+srcdir := src
 SRCS := $(PROGNAME).c
 # evtd-common.c
-vpath %.c $(SRCDIR)
-vpath %.h $(SRCDIR)
+vpath %.c $(srcdir)
+vpath %.h $(srcdir)
 
-OBJDIR := obj$(PREFIX)
+OBJDIR := obj$(TRGTSUFFIX)
 OBJS := $(filter %.c,$(SRCS))
 OBJS := $(OBJS:%.c=$(OBJDIR)/%.o)
 vpath %.o $(OBJDIR)
 
-DIRS := $(BINDIR) $(OBJDIR)
+DIRS := $(PROGDIR) $(OBJDIR)
 DIRS := $(sort $(DIRS))
 
 
@@ -156,8 +158,8 @@ DIRS := $(sort $(DIRS))
 # --> general build targets
 .DEFAULT_GOAL := all
 
-.PHONY: all$(PREFIX)
-all$(PREFIX): $(PROGNAME)
+.PHONY: all$(TRGTSUFFIX)
+all$(TRGTSUFFIX): $(PROGNAME)
 
 .PHONY: $(PROGNAME)
 $(PROGNAME): $(PROG)
@@ -166,21 +168,20 @@ $(PROGNAME): $(PROG)
 static: $(PROG)
  # Static build for the initrd/stock systems
 
-.PHONY: clean$(PREFIX)
-clean$(PREFIX):
+.PHONY: clean$(TRGTSUFFIX)
+clean$(TRGTSUFFIX):
 	-rm -f $(PROG)
 	-rm -rf $(DIRS)
 
 # --> general build targets for files and dirs
-$(PROG): $(BINDIR) $(OBJS)
-	$(LD) $(LDFLAGS) -o $(PROG) $(OBJS)
-	$(STRIP) --strip-unneeded $(PROG)
+$(PROG): $(PROGDIR) $(OBJS)
+	$(LD) $(LDFLAGS) $(CFLAGS) -o $(PROG) $(OBJS)
 
 $(OBJS): $(OBJDIR)
 # evtd-common.h
 
 $(OBJS): $(OBJDIR)/%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 $(DIRS):
 	${MKDIR} $@
@@ -224,36 +225,43 @@ help:
 	@echo ' /usr       -> /usr/sbin        -> /usr/share/man'
 	@echo ' /usr/local -> /usr/local/sbin  -> /usr/local/share/man'
 	@echo ''
-	@echo 'Relocation for build roots is supported via $$(INSTALL_PATH).'
+	@echo 'Relocation for build roots is supported via $$(DESTDIR).'
 	@echo 'Cross compilation is supported via $$(CROSS_COMPILE).'
 
 
-.PHONY: install$(PREFIX)
-install$(PREFIX): $(PROG) uninstall
+.PHONY: installdirs
+installdirs:
+ # $(PRE_INSTALL)     # Pre-install commands follow.
+	@if [ ! -d '$(DESTDIR)$(sbindir)' ] ; then $(MKDIR) '$(DESTDIR)$(sbindir)' ; fi
+	@if [ ! -d '$(DESTDIR)/etc/init.d' ] ; then $(MKDIR) '$(DESTDIR)/etc/init.d' ; fi
+	@if [ ! -d '$(DESTDIR)/etc' ] ; then $(MKDIR) '$(DESTDIR)/etc' ; fi
+	@if [ ! -d '$(DESTDIR)$(mandir)/man5' ] ; then $(MKDIR) '$(DESTDIR)$(mandir)/man5' ; fi
+	@if [ ! -d '$(DESTDIR)$(mandir)/man8' ] ; then $(MKDIR) '$(DESTDIR)$(mandir)/man8' ; fi
+
+
+.PHONY: install$(TRGTSUFFIX)
+install$(TRGTSUFFIX): $(PROG) uninstall installdirs
+ # $(NORMAL_INSTALL)  # Normal commands follow.
  # Install executable, controller script and event script
-	@if [ ! -d '$(INSTALL_PATH)$(SBIN_PATH)' ] ; then $(MKDIR) '$(INSTALL_PATH)$(SBIN_PATH)' ; fi
-	$(INSTALL_PROGRAM) '$(PROG)' '$(INSTALL_PATH)$(SBIN_PATH)'
-	$(INSTALL_PROGRAM) 'files/microapl' '$(INSTALL_PATH)$(SBIN_PATH)'
-	$(INSTALL_PROGRAM) 'files/$(PROGNAME).event' '$(INSTALL_PATH)$(SBIN_PATH)'
+	$(INSTALL_PROGRAM) '$(PROG)' '$(DESTDIR)$(sbindir)'
+	$(INSTALL_PROGRAM) 'files/microapl' '$(DESTDIR)$(sbindir)'
+	$(INSTALL_PROGRAM) 'files/$(PROGNAME).event' '$(DESTDIR)$(sbindir)'
 
  # Install daemon script
-	@if [ ! -d '$(INSTALL_PATH)/etc/init.d' ] ; then $(MKDIR) '$(INSTALL_PATH)/etc/init.d' ; fi
-	$(INSTALL_PROGRAM) -T 'files/$(PROGNAME).init' '$(INSTALL_PATH)/etc/init.d/$(PROGNAME)'
+	$(INSTALL_PROGRAM) -T 'files/$(PROGNAME).init' '$(DESTDIR)/etc/init.d/$(PROGNAME)'
 
  # Install configuration
-	@if [ ! -d '$(INSTALL_PATH)/etc' ] ; then $(MKDIR) '$(INSTALL_PATH)/etc' ; fi
-	$(INSTALL_DATA) 'files/$(PROGNAME).conf' '$(INSTALL_PATH)/etc'
+	$(INSTALL_DATA) 'files/$(PROGNAME).conf' '$(DESTDIR)/etc'
 
  # Install man pages
-	@if [ ! -d '$(INSTALL_PATH)$(MAN_PATH)/man5' ] ; then $(MKDIR) '$(INSTALL_PATH)$(MAN_PATH)/man5' ; fi
-	@if [ ! -d '$(INSTALL_PATH)$(MAN_PATH)/man8' ] ; then $(MKDIR) '$(INSTALL_PATH)$(MAN_PATH)/man8' ; fi
-	$(INSTALL_DATA) 'files/$(PROGNAME).8' '$(INSTALL_PATH)$(MAN_PATH)/man8'
-	$(INSTALL_DATA) 'files/$(PROGNAME).event.8' '$(INSTALL_PATH)$(MAN_PATH)/man8'
-	$(INSTALL_DATA) 'files/microapl.8' '$(INSTALL_PATH)$(MAN_PATH)/man8'
-	$(INSTALL_DATA) 'files/$(PROGNAME).conf.5' '$(INSTALL_PATH)$(MAN_PATH)/man5'
+	$(INSTALL_DATA) 'files/$(PROGNAME).8' '$(DESTDIR)$(mandir)/man8'
+	$(INSTALL_DATA) 'files/$(PROGNAME).event.8' '$(DESTDIR)$(mandir)/man8'
+	$(INSTALL_DATA) 'files/microapl.8' '$(DESTDIR)$(mandir)/man8'
+	$(INSTALL_DATA) 'files/$(PROGNAME).conf.5' '$(DESTDIR)$(mandir)/man5'
 
+ # $(POST_INSTALL)    # Post-install commands follow.
  # System maintenance
- ifeq (,$(INSTALL_PATH))
+ ifeq (,$(DESTDIR))
 	@echo '...Update the man database'
 	-mandb
 
@@ -262,66 +270,78 @@ install$(PREFIX): $(PROG) uninstall
  endif
 
  # Add to SysVInit system
-	@if [ -d '$(INSTALL_PATH)/etc/rcS.d' ] ; \
+	@if [ -d '$(DESTDIR)/etc/rcS.d' ] ; \
 	 then \
-		$(LN) -s '../init.d/$(PROGNAME)' '$(INSTALL_PATH)/etc/rcS.d/S70$(PROGNAME)' ; \
+		$(LN) -s '../init.d/$(PROGNAME)' '$(DESTDIR)/etc/rcS.d/S70$(PROGNAME)' ; \
 	 else \
 		echo -e "$(STOCKINFO1)" ; \
 		echo -e "$(STOCKINFO2)" ; \
 	fi
 
 
+.PHONY: install-strip$(TRGTSUFFIX)
+install-strip$(TRGTSUFFIX): install$(TRGTSUFFIX)
+	$(STRIP) --strip-unneeded '$(DESTDIR)$(sbindir)/$(PROGNAME)'
+
+
 .PHONY: uninstall
 uninstall:
- ifeq (,$(INSTALL_PATH))
+ # $(PRE_UNINSTALL)     # Pre-uninstall commands follow.
+ ifeq (,$(DESTDIR))
 	@echo '...Ensure daemon is stopped'
 	@if [ -e '/etc/init.d/$(PROGNAME)' ] ; then '/etc/init.d/$(PROGNAME)' stop ; fi
  endif
-	-rm -f '$(INSTALL_PATH)$(SBIN_PATH)/$(PROGNAME)'
-	-rm -f '$(INSTALL_PATH)$(SBIN_PATH)/microapl'
-	-rm -f '$(INSTALL_PATH)$(SBIN_PATH)/$(PROGNAME).event'
-	-rm -f '$(INSTALL_PATH)/etc/rcS.d/S70$(PROGNAME)'
-	-rm -f '$(INSTALL_PATH)/etc/init.d/$(PROGNAME)'
-	-rm -f '$(INSTALL_PATH)/etc/$(PROGNAME).conf'
-	-rm -f '$(INSTALL_PATH)$(MAN_PATH)/man8/$(PROGNAME).8'
-	-rm -f '$(INSTALL_PATH)$(MAN_PATH)/man8/$(PROGNAME).event.8'
-	-rm -f '$(INSTALL_PATH)$(MAN_PATH)/man8/microapl.8'
-	-rm -f '$(INSTALL_PATH)$(MAN_PATH)/man5/$(PROGNAME).conf.5'
+
+ # $(NORMAL_UNINSTALL)  # Normal commands follow.
+	-rm -f '$(DESTDIR)$(sbindir)/$(PROGNAME)'
+	-rm -f '$(DESTDIR)$(sbindir)/microapl'
+	-rm -f '$(DESTDIR)$(sbindir)/$(PROGNAME).event'
+	-rm -f '$(DESTDIR)/etc/rcS.d/S70$(PROGNAME)'
+	-rm -f '$(DESTDIR)/etc/init.d/$(PROGNAME)'
+	-rm -f '$(DESTDIR)/etc/$(PROGNAME).conf'
+	-rm -f '$(DESTDIR)$(mandir)/man8/$(PROGNAME).8'
+	-rm -f '$(DESTDIR)$(mandir)/man8/$(PROGNAME).event.8'
+	-rm -f '$(DESTDIR)$(mandir)/man8/microapl.8'
+	-rm -f '$(DESTDIR)$(mandir)/man5/$(PROGNAME).conf.5'
 
 
 .PHONY: removeold
 removeold:
- ifeq (,$(INSTALL_PATH))
+ # $(PRE_UNINSTALL)     # Pre-uninstall commands follow.
+ ifeq (,$(DESTDIR))
 	@echo '...Ensure daemon is stopped'
 	@if [ -e '/etc/init.d/micro_evtd' ] ; then '/etc/init.d/micro_evtd' stop ; fi
  endif
+
+ # $(NORMAL_UNINSTALL)  # Normal commands follow.
  # Pathes from 3.4 alpha development
-	-rm -f '$(INSTALL_PATH)$(SBIN_PATH)/micro_evtd'
-	-rm -f '$(INSTALL_PATH)$(SBIN_PATH)/microapl'
-	-rm -f '$(INSTALL_PATH)$(SBIN_PATH)/micro_evtd.event'
-	-rm -f '$(INSTALL_PATH)/etc/rcS.d/S70micro_evtd'
-	-rm -f '$(INSTALL_PATH)/etc/init.d/micro_evtd'
-	-rm -f '$(INSTALL_PATH)/etc/micro_evtd/micro_evtd.conf'
-	-rm -f '$(INSTALL_PATH)$(MAN_PATH)/man8/micro_evtd.8'
-	-rm -f '$(INSTALL_PATH)$(MAN_PATH)/man8/micro_evtd.event.8'
-	-rm -f '$(INSTALL_PATH)$(MAN_PATH)/man8/microapl.8'
-	-rm -f '$(INSTALL_PATH)$(MAN_PATH)/man5/micro_evtd.conf.5'
+	-rm -f '$(DESTDIR)$(sbindir)/micro_evtd'
+	-rm -f '$(DESTDIR)$(sbindir)/microapl'
+	-rm -f '$(DESTDIR)$(sbindir)/micro_evtd.event'
+	-rm -f '$(DESTDIR)/etc/rcS.d/S70micro_evtd'
+	-rm -f '$(DESTDIR)/etc/init.d/micro_evtd'
+	-rm -f '$(DESTDIR)/etc/micro_evtd/micro_evtd.conf'
+	-rm -f '$(DESTDIR)$(mandir)/man8/micro_evtd.8'
+	-rm -f '$(DESTDIR)$(mandir)/man8/micro_evtd.event.8'
+	-rm -f '$(DESTDIR)$(mandir)/man8/microapl.8'
+	-rm -f '$(DESTDIR)$(mandir)/man5/micro_evtd.conf.5'
  # Pathes from Davy Gravy's hdd image
-	-rm -f '$(INSTALL_PATH)/usr/local/sbin/micro_evtd'
-	-rm -f '$(INSTALL_PATH)/usr/local/sbin/microapl'
-	-rm -f '$(INSTALL_PATH)/etc/micro_evtd/micro_evtd.event'
-	-rm -f '$(INSTALL_PATH)/etc/rcS.d/S70micro_evtd'
-	-rm -f '$(INSTALL_PATH)/etc/init.d/micro_evtd'
-	-rm -f '$(INSTALL_PATH)/etc/micro_evtd/micro_evtd.conf'
-	-rm -f '$(INSTALL_PATH)/usr/local/share/man/man8/micro_evtd.8'
-	-rm -f '$(INSTALL_PATH)/usr/local/share/man/man1/micro_evtd.1.gz'
-	-rm -f '$(INSTALL_PATH)/usr/local/share/man/man8/micro_evtd.event.8'
-	-rm -f '$(INSTALL_PATH)/usr/local/share/man/man8/microapl.8'
-	-rm -f '$(INSTALL_PATH)/usr/local/share/man/man5/micro_evtd.conf.5'
+	-rm -f '$(DESTDIR)/usr/local/sbin/micro_evtd'
+	-rm -f '$(DESTDIR)/usr/local/sbin/microapl'
+	-rm -f '$(DESTDIR)/etc/micro_evtd/micro_evtd.event'
+	-rm -f '$(DESTDIR)/etc/rcS.d/S70micro_evtd'
+	-rm -f '$(DESTDIR)/etc/init.d/micro_evtd'
+	-rm -f '$(DESTDIR)/etc/micro_evtd/micro_evtd.conf'
+	-rm -f '$(DESTDIR)/usr/local/share/man/man8/micro_evtd.8'
+	-rm -f '$(DESTDIR)/usr/local/share/man/man1/micro_evtd.1.gz'
+	-rm -f '$(DESTDIR)/usr/local/share/man/man8/micro_evtd.event.8'
+	-rm -f '$(DESTDIR)/usr/local/share/man/man8/microapl.8'
+	-rm -f '$(DESTDIR)/usr/local/share/man/man5/micro_evtd.conf.5'
  # Older versions
-	-rm -f '$(INSTALL_PATH)/etc/default/micro_evtd'
-	-rm -f '$(INSTALL_PATH)/etc/micro_evtd/Eventscript'
-	-rm -f '$(INSTALL_PATH)/usr/sbin/man/man1/micro_evtd.1.gz'
-	-rm -f '$(INSTALL_PATH)/usr/local/man/man1/micro_evtd.1.gz'
- #
-	-rmdir '$(INSTALL_PATH)/etc/micro_evtd'
+	-rm -f '$(DESTDIR)/etc/default/micro_evtd'
+	-rm -f '$(DESTDIR)/etc/micro_evtd/Eventscript'
+	-rm -f '$(DESTDIR)/usr/sbin/man/man1/micro_evtd.1.gz'
+	-rm -f '$(DESTDIR)/usr/local/man/man1/micro_evtd.1.gz'
+
+ # $(POST_UNINSTALL)     # Post-uninstall commands follow.
+	-rmdir '$(DESTDIR)/etc/micro_evtd'

@@ -79,14 +79,14 @@ else
  mandir := /usr/share/man
 endif
 
-# STOCKINFO is printed if it seems to be a stock installation, where
+# INITINFO is printed if it seems to be a stock installation, where
 # /etc/rcS.d/ is normally missing
- STOCKINFO1 = "Looks *LIKE* a Stock Firmware installation:\\n\
+ INITINFO1 = "Looks *LIKE* a Stock Firmware installation:\\n\
 Please edit the file \"$(DESTDIR)/etc/init.d/rcS\".\\n\
 Create a backup of the original file before editing.\\n\
 Comment out calls of miconapl, miconmon.sh and micon_setup.sh.\\n\
 Finally add a call of \"/etc/init.d/$(PROGNAME) start\" to it."
- STOCKINFO2 = "If *NOT* a Stock Firmware installation, e.g. Freelink/Debian:\\n\
+ INITINFO2 = "If *NOT* a Stock Firmware installation, e.g. Freelink/Debian:\\n\
 Add a link to $(PROGNAME) init script in /etc/init.d/rcS\.\\n\
 $(LN) -s '../init.d/$(PROGNAME)' '$(DESTDIR)/etc/rcS.d/S70$(PROGNAME)'"
 
@@ -274,8 +274,8 @@ install$(TRGTSUFFIX): $(PROG) uninstall installdirs
 	 then \
 		$(LN) -s '../init.d/$(PROGNAME)' '$(DESTDIR)/etc/rcS.d/S70$(PROGNAME)' ; \
 	 else \
-		echo -e "$(STOCKINFO1)" ; \
-		echo -e "$(STOCKINFO2)" ; \
+		echo -e "$(INITINFO1)" ; \
+		echo -e "$(INITINFO2)" ; \
 	fi
 
 

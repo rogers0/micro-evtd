@@ -14,7 +14,7 @@
 	  - Correction for re-check on DelayedStandby. (lb-source)
 	  - Corrections to signed values. (lb-source)
 	  - Allow redirect without buffering printf output. (lb-source)
-	  - Enhanced verion output with revision. (Maddes)
+	  - Enhanced version output with revision. (Maddes)
 	  - Increased path length for log and tmp up to 39 chars. (Maddes)
 	  - Added size check also to log path. (Maddes)
 	  - Increased string length for event script command line. (Maddes)

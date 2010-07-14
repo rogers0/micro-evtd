@@ -79,17 +79,18 @@ else
  mandir := /usr/share/man
 endif
 
-# INITINFO is printed if it seems to be a stock installation, where
-# /etc/rcS.d/ is normally missing
- INITINFO1 = "Looks *LIKE* a Stock Firmware installation:\\n\
+# INITINFO explains how to activate the daemon on different firmwares
+ INITINFO1 = "To activate $(PROGNAME) on a Stock Firmware installation:\\n\
 Please edit the file \"$(DESTDIR)/etc/init.d/rcS\".\\n\
 Create a backup of the original file before editing.\\n\
 Comment out calls of miconapl, miconmon.sh and micon_setup.sh.\\n\
 Finally add a call of \"/etc/init.d/$(PROGNAME) start\" to it."
- INITINFO2 = "If *NOT* a Stock Firmware installation, e.g. Freelink/Debian:\\n\
+ INITINFO2 = "To activate $(PROGNAME) on a *NON* Stock Firmware installation, e.g. Freelink/Debian:\\n\
 Add a link to $(PROGNAME) init script in /etc/init.d/rcS\.\\n\
 $(LN) -s '../init.d/$(PROGNAME)' '$(DESTDIR)/etc/rcS.d/S70$(PROGNAME)'"
 
+# MANINFO explains how to update the man database
+ MANINFO = "To update the db of the man pages call mandb"
 
 # Make variables (CC, etc...)
 CC = $(CROSS_COMPILE)gcc
@@ -199,19 +200,20 @@ test:  $(PROG)
 .PHONY: help
 help:
 	@echo 'Build targets:'
-	@echo '  all        - Default target to build $(PROGNAME)'
-	@echo '  static     - Link $(PROGNAME) statically for the initrd/stock systems'
-	@echo '  ts         - Build $(PROGNAME) for Terastation (-DTS)'
-	@echo '  test       - Build $(PROGNAME) for maintainer test (-DTEST)'
+	@echo '  all           - Default target to build $(PROGNAME)'
+	@echo '  static        - Link $(PROGNAME) statically for the initrd/stock systems'
+	@echo '  ts            - Build $(PROGNAME) for Terastation (-DTS)'
+	@echo '  test          - Build $(PROGNAME) for maintainer test (-DTEST)'
 	@echo ''
 	@echo 'Cleaning targets:'
-	@echo '  clean      - Remove generated files'
+	@echo '  clean         - Remove generated files'
 	@echo ''
 	@echo 'Installation targets:'
-	@echo '  removeold  - Remove old versions before 3.4 of $(PROGNAME)'
-	@echo '               It is recommended to (re)install afterwards'
-	@echo '  install    - Install $(PROGNAME)'
-	@echo '  uninstall  - Uninstall $(PROGNAME)'
+	@echo '  removeold     - Remove old versions before 3.4 of $(PROGNAME)'
+	@echo '                  It is recommended to (re)install afterwards'
+	@echo '  install       - Install $(PROGNAME)'
+	@echo '  install-strip - Install stripped $(PROGNAME)'
+	@echo '  uninstall     - Uninstall $(PROGNAME)'
 	@echo ''
 	@echo 'Additionally this makefile allows to combine several targets by appending them'
 	@echo 'as suffices to the targets all, clean or install.'
@@ -262,21 +264,14 @@ install$(TRGTSUFFIX): $(PROG) uninstall installdirs
  # $(POST_INSTALL)    # Post-install commands follow.
  # System maintenance
  ifeq (,$(DESTDIR))
-	@echo '...Update the man database'
-	-mandb
-
 	@echo '...Start daemon'
 	-/etc/init.d/$(PROGNAME) start
  endif
 
- # Add to SysVInit system
-	@if [ -d '$(DESTDIR)/etc/rcS.d' ] ; \
-	 then \
-		$(LN) -s '../init.d/$(PROGNAME)' '$(DESTDIR)/etc/rcS.d/S70$(PROGNAME)' ; \
-	 else \
-		echo -e "$(INITINFO1)" ; \
-		echo -e "$(INITINFO2)" ; \
-	fi
+ # Display activation infos
+	@echo -e "$(INITINFO1)"
+	@echo -e "$(INITINFO2)"
+	@echo -e "$(MANINFO)"
 
 
 .PHONY: install-strip$(TRGTSUFFIX)

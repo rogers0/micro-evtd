@@ -1,10 +1,6 @@
 To Do List for Linkstation/Kuro/Terastation Micro Event daemon
 ==============================================================
 
-* Release
-  ETA for beta: CW 26/2010 ("forum preview")
-  ETA for release: CW 28/2010 (some weeks before next Debian freeze)
-
 * Config file:
   * Only read by micro-evtd.c. Event script is only called by micro-evtd.
   * What happens when it is empty? First analysis shows defaults are used.

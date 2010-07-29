@@ -102,7 +102,7 @@ typedef struct _OFF_TIMER {
 
 // Some global variables with default values
 const char strTitle[]="Micro Event Daemon for LSP/LSL/Kuro/TS";
-const char strVersion[]="3.4 beta";
+const char strVersion[]="3.4";
 char strRevision[]="$Revision$";
 const char micro_device[]="/dev/ttyS1";
 const char micro_conf[]="/etc/micro-evtd.conf";

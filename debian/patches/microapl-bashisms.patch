@@ -1,7 +1,5 @@
-Index: micro-evtd-3.3.3/Install/microapl
-===================================================================
---- micro-evtd-3.3.3.orig/Install/microapl	2008-08-13 16:28:55.000000000 +0200
-+++ micro-evtd-3.3.3/Install/microapl	2008-08-13 16:36:07.000000000 +0200
+--- a/Install/microapl
++++ b/Install/microapl
 @@ -27,16 +27,18 @@
  
  	local arg="$(echo -n $1 | tr 'a-z' 'A-Z')"
@@ -21,8 +19,131 @@ Index: micro-evtd-3.3.3/Install/microapl
  
 -	local result="${NOTESTRING:$((${octave} * 4)):4}"
 +	# Build expression and pass it to sed, due to evaluation.
-+	expr="s/^.{$(($octave*4))\}\(.\{4\}\).*/\1/"
++	expr="s/^.\{$(($octave*4))\}\(.\{4\}\).*/\1/"
 +	local result="$(echo $NOTESTRING | sed $expr)"
  	if [ -n "$result" ] ; then
  	  echo -n $result
  	else
+@@ -75,7 +77,7 @@
+ 		system_get_mode)
+ 			$MICRO 8034 ;;
+ 		system_set_watchdog)
+-			if [ "$2" == "" ] ; then
++			if [ "$2" = "" ] ; then
+ 			  TEMP=`$MICRO 8035`
+ 			  TEMP=`expr 255 - ${TEMP}`
+ 			  echo "#[microapl.system_set_watchdog]"
+@@ -98,7 +100,7 @@
+ 			echo "#[microapl.temp_get]"
+ 			echo "temp="${TEMP}"[C-degs]" ;;
+ 		fan_set_speed)
+-			if [ "$2" == "" ] ; then
++			if [ "$2" = "" ] ; then
+ 			  echo "#[microapl.fan_set_speed]"
+ 			  echo -n "fan_set_speed="
+ 			  case `$MICRO 8033` in
+@@ -134,7 +136,7 @@
+ 			  *)       $MICRO_q 013000 ;;
+ 			esac ;;
+ 		bz_set_freq)
+-			if [ "$2" == "" ] ; then
++			if [ "$2" = "" ] ; then
+ 			  echo "#[microapl.bz_set_freq]"
+ 			  echo "bz_set_freq="`$MICRO 8053`
+ 			else
+@@ -149,7 +151,7 @@
+ 			  $MICRO_q 0253${TEMP}${TEMP2}
+ 			fi ;;
+ 		bz_imhere)
+-			if [ "$2" == "" ] ; then
++			if [ "$2" = "" ] ; then
+ 			  echo "please specify tempo and note(s)"
+ 			else
+ 			  TIME="$(($2 / 1000)).$(printf '%03d' $(($2 % 1000)))"
+@@ -158,6 +160,7 @@
+ 			  shift
+ 			  parse led_set_cpu_mcon 15
+ 			  $MICRO_q 0253$(note_to_freq $1)
++			  shift
+ 			  parse bz_on on
+ 			  for i in $@ ; do
+ 			    $MICRO_q 0253$(note_to_freq $i)
+@@ -174,13 +177,14 @@
+ 			  parse led_set_cpu_mcon 0
+ 			fi ;;
+ 		bz_melody)
+-			if [ "$2" == "" ] ; then
++			if [ "$2" = "" ] ; then
+ 			  echo "please specify tempo and note(s)"
+ 			else
+ 			  TIME="$(($2 / 1000)).$(printf '%03d' $(($2 % 1000)))"
+ 			  shift
+ 			  shift
+ 			  $MICRO_q 0253$(note_to_freq $1)
++			  shift
+ 			  parse bz_on on
+ 			  for i in $@ ; do
+ 			    $MICRO_q 0253$(note_to_freq $i)
+@@ -198,7 +202,7 @@
+ 			esac
+ 			;;
+ 		led_set_bright)
+-			if [ "$2" == "" ] ; then
++			if [ "$2" = "" ] ; then
+ 			  TEMP=`$MICRO 803A`
+ 			  TEMP="$((${TEMP} & 0xF))"
+ 			  case "${TEMP}" in
+@@ -255,7 +259,7 @@
+ 			  led_set_blink | \
+ 			  led_set_brink)    COMMAND=52 ; SET="on";   UNSET="off" ;;
+ 			esac
+-			if [ "$2" == "" ] ; then
++			if [ "$2" = "" ] ; then
+ 			  echo "#[microapl.$1]"
+ 			  TEMP=`$MICRO 80${COMMAND}`
+ 			  # extract first element
+@@ -281,7 +285,7 @@
+ 			  $MICRO_q 02${COMMAND}${TEMP}00
+ 			fi ;;
+ 		led_set_code_error)
+-			if [ "$2" == "" ] ; then
++			if [ "$2" = "" ] ; then
+ 			  TEMP=`$MICRO 8054`
+ 			  TEMP="${TEMP##* }"
+ 			  echo "#[microapl.led_set_code_error]"
+@@ -309,7 +313,7 @@
+ 			  $MICRO_q 0254${TEMP}${ARG}
+ 			fi ;;
+ 		led_set_code_information)
+-			if [ "$2" == "" ] ; then
++			if [ "$2" = "" ] ; then
+ 			  TEMP=`$MICRO 8054`
+ 			  TEMP="${TEMP%% *}"
+ 			  TEMP="$(printf '%02X' ${TEMP})"
+@@ -337,7 +341,7 @@
+ 		mcon_get_status)
+ 			echo "#[microapl.mcon_get_status]"
+ 			echo -n "mcon_status="
+-			if [ `$MICRO 803C` == "32" ] ; then
++			if [ `$MICRO 803C` = "32" ] ; then
+ 			  echo "on"
+ 			else
+ 			  echo "off"
+@@ -347,7 +351,7 @@
+ 			echo "#[microapl.mcon_get_version]"
+ 			echo -n "mcon_version="
+ 			TEMP=`$MICRO 8083`
+-			if [ "${TEMP}" == -1 ] ; then
++			if [ "${TEMP}" = -1 ] ; then
+ 			  echo "(error while getting version)"
+ 			else
+ 			  for i in ${TEMP} ; do
+@@ -357,7 +361,7 @@
+ 			fi
+ 			;;
+ 		hdd_set_power)
+-			if [ "$2" == "" ] ; then
++			if [ "$2" = "" ] ; then
+ 			  echo "#[microapl.hdd_set_power]"
+ 			  case `$MICRO 803B` in
+ 			    0) echo -e "hdd12_power=off\nhdd34_power=off" ;;

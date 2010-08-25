@@ -44,7 +44,7 @@ case "$1" in
 	start)
 		# Start micro_evtd if not already running, exit with failure
 		# if start failed
-		[ -z "$(pidof micro_evtd)" ] || micro_evtd_start || exit 1
+		[ -n "$(pidof micro_evtd)" ] || micro_evtd_start || exit 1
 		;;
 	startup)
 		$MICROAPL led_set_blink power

@@ -1,7 +1,5 @@
-Index: micro-evtd-3.3.3/micro_evtd.c
-===================================================================
---- micro-evtd-3.3.3.orig/micro_evtd.c	2008-07-09 10:53:52.000000000 +0200
-+++ micro-evtd-3.3.3/micro_evtd.c	2008-07-09 10:53:53.000000000 +0200
+--- a/micro_evtd.c
++++ b/micro_evtd.c
 @@ -403,8 +403,8 @@
  	char strEventScript[50];
  	
@@ -13,11 +11,19 @@ Index: micro-evtd-3.3.3/micro_evtd.c
  	cmd, 
  	cmd2, 
  	cmd3,
-Index: micro-evtd-3.3.3/Install/EventScript
-===================================================================
---- micro-evtd-3.3.3.orig/Install/EventScript	2008-07-09 10:47:03.000000000 +0200
-+++ micro-evtd-3.3.3/Install/EventScript	2008-07-09 10:54:48.000000000 +0200
-@@ -51,7 +51,7 @@
+--- a/Install/EventScript
++++ b/Install/EventScript
+@@ -26,8 +26,7 @@
+ fi
+ 
+ ## Ensure tmp path is valid
+-LEN=${#TMP}-1
+-if [ $'\r' = "${TMP:${LEN}:1}" ]; then TMP=${TMP:0:$LEN} ; fi
++TMP=$(echo $TMP | tr -d '\r')
+ if [ ! -d ${TMP} ]; then TMP=/tmp ; fi
+ 
+ if [ "$DEBUG" ] && [ -d "$LOG" ]; then
+@@ -51,7 +50,7 @@
  create_script() {
  	## Create RAM version of control file
  	if [ ! -d $TMP/micro_evtd ]; then mkdir $TMP/micro_evtd ; fi
@@ -26,7 +32,7 @@ Index: micro-evtd-3.3.3/Install/EventScript
  	## Stop flashing LEDs and clear error codes
  	micro_evtd -q -s 02520000,02540000
  }
-@@ -103,9 +103,13 @@
+@@ -103,9 +102,13 @@
  	      1)  stop ;;
  	      2)  ;;
  	      4)  ;;
@@ -42,3 +48,12 @@ Index: micro-evtd-3.3.3/Install/EventScript
  	          rm -f /boot/hddrootmode
  	          reboot ;;
  	      *)  ;;
+@@ -150,7 +153,7 @@
+ 	4)	fan_fault $2 ;;
+ 	C)	create_script ;;
+ 	O)	over_heat $2 ;;
+-	I)	TEMP="${4//_/ }"
++	I)	TEMP="$(echo $4 | tr -d _)"
+ 		dump_info $2 $3 ${TEMP} ;;
+ 	B)	button $2 $4;;
+ 	W)	message $2 ;;

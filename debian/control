@@ -1,7 +1,7 @@
 Source: micro-evtd
 Section: utils
 Priority: optional
-Maintainer: Per Andersson <avtobiff@gmail.com>
+Maintainer: Ryan Tandy <tarpman@gmail.com>
 Build-Depends: debhelper (>= 6), quilt (>= 0.46)
 Standards-Version: 3.8.0
 Homepage: http://buffalo.nas-central.org/download/Users/lb_worm/micro_evtd/micro_evtd/

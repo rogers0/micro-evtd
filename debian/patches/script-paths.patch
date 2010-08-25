@@ -1,7 +1,5 @@
-Index: micro-evtd-3.3.3/Install/EventScript
-===================================================================
---- micro-evtd-3.3.3.orig/Install/EventScript	2008-07-31 14:54:55.000000000 +0200
-+++ micro-evtd-3.3.3/Install/EventScript	2008-07-31 14:55:50.000000000 +0200
+--- a/Install/EventScript
++++ b/Install/EventScript
 @@ -15,7 +15,7 @@
  # NOTE:
  # shutdown calls will operate on stock system but will ignore parameters
@@ -11,16 +9,16 @@ Index: micro-evtd-3.3.3/Install/EventScript
  
  if [ "$1" = "C" ]; then
    TMP=$4
-@@ -28,7 +28,7 @@
+@@ -27,7 +27,7 @@
+ 
  ## Ensure tmp path is valid
- LEN=${#TMP}-1
- if [ $'\r' = "${TMP:${LEN}:1}" ]; then TMP=${TMP:0:$LEN} ; fi
+ TMP=$(echo $TMP | tr -d '\r')
 -if [ ! -d ${TMP} ]; then TMP=/tmp ; fi
 +if [ ! -d ${TMP} ]; then TMP=/tmp/micro_evtd ; fi
  
  if [ "$DEBUG" ] && [ -d "$LOG" ]; then
    if [ "$DEBUG" -gt 0 ]; then
-@@ -50,8 +50,8 @@
+@@ -49,8 +49,8 @@
  
  create_script() {
  	## Create RAM version of control file
@@ -31,10 +29,8 @@ Index: micro-evtd-3.3.3/Install/EventScript
  	## Stop flashing LEDs and clear error codes
  	micro_evtd -q -s 02520000,02540000
  }
-Index: micro-evtd-3.3.3/Install/micro_evtd.sample
-===================================================================
---- micro-evtd-3.3.3.orig/Install/micro_evtd.sample	2008-07-31 14:54:10.000000000 +0200
-+++ micro-evtd-3.3.3/Install/micro_evtd.sample	2008-07-31 14:54:19.000000000 +0200
+--- a/Install/micro_evtd.sample
++++ b/Install/micro_evtd.sample
 @@ -1,7 +1,7 @@
  # /etc/micro_evtd/micro_evtd.conf: Configuration file for micro_evtd
  
@@ -44,10 +40,8 @@ Index: micro-evtd-3.3.3/Install/micro_evtd.sample
  
  # Directory that the log file should be created in.
  # LOG=/var/log
-Index: micro-evtd-3.3.3/micro_evtd.c
-===================================================================
---- micro-evtd-3.3.3.orig/micro_evtd.c	2008-07-31 14:54:23.000000000 +0200
-+++ micro-evtd-3.3.3/micro_evtd.c	2008-07-31 14:54:49.000000000 +0200
+--- a/micro_evtd.c
++++ b/micro_evtd.c
 @@ -109,7 +109,7 @@
  char i_Use_Trend=1;
  char log_path[20]="/var/log";

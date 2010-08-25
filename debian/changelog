@@ -1,3 +1,22 @@
+micro-evtd (3.3.3-7) unstable; urgency=low
+
+  * New maintainer.
+  * debian/udeb/micro_evtd.command: Fixed test condition for whether daemon is
+    already running. (Closes: #580549)
+  * debian/patches/microapl-bashisms.patch: Fixed several more bashisms in
+    microapl.  Based on a patch by Noriaki Mitsunaga. (Closes: #534257)
+  * debian/patches/eventscript.patch: Fixed more bashisms, so the script
+    actually copies and runs now.
+  * debian/patches/script-paths.patch: Refreshed.
+  * debian/init.d:
+    - Replaced Required-{Start,Stop} with values from /etc/init.d/skeleton,
+    as the daemon has no special requirements.  (Fixes a lintian error.)
+    - Added runlevel 1 to Default-Stop.  (Fixes a lintian warning.)
+  * debian/rules: Overrode CFLAGS to work around a segfault that appears when
+    built with optimizations.
+
+ -- Ryan Tandy <tarpman@gmail.com>  Tue, 24 Aug 2010 22:15:38 -0700
+
 micro-evtd (3.3.3-6+lenny3) unstable; urgency=low
 
   * Added safety measure in udeb for argument incompability between

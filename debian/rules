@@ -3,6 +3,9 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+# Override CFLAGS to prevent a segfault that appears with optimization.
+CFLAGS = 
+
 PACKAGES = $(shell dh_listpackages -s)
 UDEB_DIRS	= lib/debian-installer-startup.d \
 			  usr/lib/base-installer.d \

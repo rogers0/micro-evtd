@@ -2,12 +2,12 @@
 #
 ### BEGIN INIT INFO
 # Provides:          micro-evtd
-# Required-Start:    $all
-# Required-Stop:     
+# Required-Start:    $remote_fs $syslog
+# Required-Stop:     $remote_fs $syslog
 # Should-Start:      
 # Should-Stop:       
 # Default-Start:     2 3 4 5
-# Default-Stop:      0 6
+# Default-Stop:      0 1 6
 # Short-Description: Daemon for Linkstation/Kuro micro controller
 # Description:       Micro-evtd is able to control and monitor fans,
 #                    various LEDs, system temperature and two buttons. It

@@ -1,0 +1,14 @@
+2008-03-29  Bob Perry (lb-source@users.sourceforge.net)
+
+	* (VERSION): 1.1.
+
+	* wol.c: Amendment for wake up.  Invoke the Event
+	  script rather than issuing a reboot.
+
+2008-01-29  Bob Perry (lb-source@users.sourceforge.net)
+	
+	* (VERSION): 1.0, Release.
+	
+	* Added wol.c
+	
+	* Added Makefile

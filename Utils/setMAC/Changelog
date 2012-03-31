@@ -1,0 +1,7 @@
+2008-01-29  Bob Perry (lb-source@users.sourceforge.net)
+	
+	* (VERSION): 1.0, Release.
+	
+	* Added setMAC.c
+	
+	* Added Makefile

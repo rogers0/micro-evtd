@@ -1,0 +1,87 @@
+#!/bin/sh
+#
+# micro_evtd Linkstation/Kuro Micro-Controller daemon
+#
+# Other files used are:
+#  /etc/default/micro_evtd 		- Optional configuration file
+#  /etc/micro_evtd/EventScript 	- Provides user with scripted
+#                             	  Micro event points
+#
+# Written by Bob Perry (2007) lb-source@users.sourceforge.net
+#
+
+DAEMON=micro_evtd
+LOGTAG=${DAEMON}
+LOGFACILITY=local0.info
+
+PATH=/bin:/sbin:/usr/bin:usr/sbin:/usr/local/bin:/usr/local/sbin
+
+test -e /usr/local/sbin/${DAEMON} || exit 0
+
+start()
+{
+	## Update the filesystem okay flag
+	date > /boot/rootfs_ok
+	## delete booting file
+	rm -f /boot/rootfs_booting
+	rm -f /boot/initrdmode
+
+	echo "Start services: micro_evtd"
+	logger -t ${LOGTAG} -p ${LOGFACILITY} 'Started daemon micro_evtd'
+	## Grab version info and display it
+	MESSAGE=`${DAEMON} -v`
+	logger -t ${LOGTAG} -p ${LOGFACILITY} ${MESSAGE}
+	${DAEMON}
+}
+
+stop()
+{
+	echo "Stop services: ${DAEMON}"
+	logger -t ${LOGTAG} -p ${LOGFACILITY} 'Stopped daemon micro_evtd'
+        start-stop-daemon --stop --exec /usr/local/sbin/${DAEMON} --oknodo --retry 5
+
+	if [ -n "$RUNLEVEL" ]; then	
+	  if [ "${RUNLEVEL}" -eq 6 ]; then
+	    ##  Reboot
+	    CMD=000E
+	    echo -n "${DAEMON}: Reboot commenced"
+	  elif [ "${RUNLEVEL}" -eq 0 ]; then
+	    ## Shutdown
+	    CMD=000C
+	    echo -n "${DAEMON}: Shutdown commenced"
+	  fi
+	  if [ -n ${CMD} ]; then
+ 	    ## Buzzer, cooling, blink power LED
+	    ${DAEMON} -q -s 013002,013303,02510100,02520100
+	    sleep 2
+	    ## Check that an update is not in progress
+	    while [ -f /var/run/fwupdate ];
+	    do
+	      echo -n "Firmware updating"
+	      sleep 5
+	    done
+		
+	    ${DAEMON} -q -s ${CMD}
+
+	    echo "."
+	  fi
+	fi
+}
+
+case $1 in
+start)
+	start
+	;;
+stop)
+	stop
+	;;
+restart)
+	$0 stop
+	sleep 1
+	$0 start
+	;;
+*)
+	;;
+esac
+
+exit 0

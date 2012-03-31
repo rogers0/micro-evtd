@@ -1,0 +1,25 @@
+# Tmp/ram disk location
+TMP=/tmp
+# Debug log file location
+LOG=/var/log
+# Advanced use only.  Will log events when enabled
+# DEBUG=0
+# Default on, set to off to disable fan control
+MONITOR=ON
+# Default 40 seconds, daemon monitor/refresh state
+REFRESH=40
+# Default 30 seconds, fan stationary timer
+FANSTOP=30
+# Default 35 45 50 60, temperature/fan controls
+# 35 - slow, normal running ~33 C-deg
+# 45 - fast
+# 50 - full
+# 60 - Too hot alarm, overheat
+TEMP-RANGE=32 38 42 60
+# Default no, set to YES to use average sampled temp to
+# give a smoother control of fan speed
+TREND=YES
+# Default 2, specify fan/temp control hysteresis 1-5
+HYSTERESIS=2
+# Low power (standby) timer control
+SUN-SAT=ON=08:00,OFF>05:00

@@ -3,7 +3,7 @@ Section: utils
 Priority: optional
 Maintainer: Ryan Tandy <ryan@nardis.ca>
 Build-Depends: debhelper (>= 8)
-Standards-Version: 3.9.1.0
+Standards-Version: 3.9.3.0
 Homepage: http://www.sourceforge.net/projects/ppc-evtd
 
 Package: micro-evtd

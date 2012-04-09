@@ -1,4 +1,4 @@
-Format-Specification: http://svn.debian.org/wsvn/dep/web/deps/dep5.mdwn?op=file&rev=135
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Name: micro-evtd
 Maintainer: Matthias Bücher <maddes@users.sourceforge.net>
 Source: http://www.sourceforge.net/projects/ppc-evtd
@@ -10,7 +10,7 @@ License: GPL-2+
 
 Files: debian/*
 Copyright: 2008, Per Andersson <avtobiff@gmail.com>
-           2010, Ryan Tandy <ryan@nardis.ca>
+           2010-2012, Ryan Tandy <ryan@nardis.ca>
 License: GPL-2+
 
 License: GPL-2+

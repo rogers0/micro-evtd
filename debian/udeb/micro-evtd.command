@@ -7,7 +7,7 @@ DAEMON=/usr/sbin/micro-evtd
 MICROAPL="/usr/sbin/microapl -a"
 PIDFILE=/var/run/micro-evtd.pid
 
-micro-evtd_start() {
+micro_evtd_start() {
 	$DAEMON >/dev/null # daemon forks on its own
 	# Allow time to startup
 	sleep 1
@@ -25,10 +25,10 @@ machine=`sed -n '/Hardware/ {s/^Hardware\s*:\s//;p}' /proc/cpuinfo`
 case $machine in
 	"Buffalo Linkstation Pro/Live" | "Buffalo/Revogear Kurobox Pro")
 	# Success or continue
-	[ "$1" == "-t" ] && exit 0 || true ;;
+	[ "$1" = "-t" ] && exit 0 || true ;;
 	*)
 	# Failure Silently exit
-	[ "$1" == "-t" ] && exit 1 || exit 0 ;;
+	[ "$1" = "-t" ] && exit 1 || exit 0 ;;
 esac
 
 # Execute commands here
@@ -44,7 +44,7 @@ case "$1" in
 	start)
 		# Start micro-evtd if not already running, exit with failure
 		# if start failed
-		[ -n "$(pidof micro-evtd)" ] || micro-evtd_start || exit 1
+		[ -n "$(pidof micro-evtd)" ] || micro_evtd_start || exit 1
 		;;
 	startup)
 		$MICROAPL led_set_blink power

@@ -1,0 +1,27 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    configure)
+        # if 3.4-1 was ever installed, some files may have been accidentally
+        # placed in /usr/sbin, so clean them up
+
+        if [ -f /usr/sbin/micro-evtd.standby ]; then
+            rm /usr/sbin/micro-evtd.standby
+        fi
+
+        if [ -f /usr/sbin/micro-evtd.status ]; then
+            rm /usr/sbin/micro-evtd.status
+        fi
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0

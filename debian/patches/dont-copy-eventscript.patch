@@ -57,7 +57,7 @@
 -	     2) echo "`date` $1 $2 $3 $4" >> $LOG/micro-evtd.log
 -      esac
 -  fi
-+TMP=`dirname $0`
++TMP=/var/run
 +DEBUG=$6
 +LOG=$5
 +if [ "$DEBUG" -gt 0 ] && [ -d "$LOG" ]; then

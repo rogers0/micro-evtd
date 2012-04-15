@@ -1,2 +1,3 @@
 buffalo-files.patch
 dont-copy-eventscript.patch
+bashisms.patch

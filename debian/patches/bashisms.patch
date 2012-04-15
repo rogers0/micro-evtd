@@ -1,0 +1,45 @@
+--- a/files/microapl
++++ b/files/microapl
+@@ -1,4 +1,4 @@
+-#!/bin/bash
++#!/bin/sh
+ #
+ # microapl Linkstation/Kuro Micro-Controller querry script
+ #
+@@ -76,15 +76,15 @@
+ 			  ## Delay amount?
+ 			  if [ "$2" != "" ] ; then
+ 			    ## We only do 5 mins intervals
+-			    ((COUNT=($2+4)/5))
++			    COUNT=$((($2+4)/5))
+ 			  fi
+ 			  LOOP=0
+ 			  DELAY=0
+ 			  while [ ${LOOP} -lt ${COUNT} ] ; do
+-			    ((DELAY +=5))
+-			    ((LOOP ++))
++			    DELAY=$(($DELAY+5))
++			    LOOP=$(($LOOP+1))
+ 			    /bin/kill -SIGCONT ${PID}
+-			    LC=0 ; while [ ${LC} -lt 50 ] ;do ((LC ++)) ; done
++			    LC=0 ; while [ ${LC} -lt 50 ] ;do LC=$((LC+1)) ; done
+ 			  done
+ 			  echo "Standby delayed by additional ${DELAY} minutes"
+ 			else
+--- a/files/micro-evtd.event
++++ b/files/micro-evtd.event
+@@ -1,4 +1,4 @@
+-#!/bin/bash
++#!/bin/sh
+ # micro-evtd Event Script
+ #
+ # Sample Event Script written by Bob Perry (2007-2009)
+@@ -158,7 +158,7 @@
+ case "$1" in
+ 	4)	fan_fault $2 ;;
+ 	O)	over_heat $2 ;;
+-	I)	dump_info $2 $3 ${4//_/ } ;;
++	I)	dump_info $2 $3 $(echo $4 | tr -d _) ;;
+ 	B)	button $2 $4;;
+ 	W)	message $2 ;;
+ 	S)	standby $2 $3 ;;

@@ -4,8 +4,9 @@ micro-evtd (3.4-2) UNRELEASED; urgency=low
     for the report and patch. (Closes: #666218)
   * debian/copyright: Update Format URL and debian/ copyright declaration. 
   * debian/control: Update Standards-Version to 3.9.3.
+  * debian/patches/bashisms.patch: Patch out remaining bashisms from scripts.
 
- -- Ryan Tandy <ryan@nardis.ca>  Mon, 09 Apr 2012 15:54:39 -0700
+ -- Ryan Tandy <ryan@nardis.ca>  Sat, 14 Apr 2012 22:27:15 -0700
 
 micro-evtd (3.4-1) unstable; urgency=low
 

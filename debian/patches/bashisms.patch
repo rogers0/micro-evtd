@@ -150,11 +150,13 @@
  # micro-evtd Event Script
  #
  # Sample Event Script written by Bob Perry (2007-2009)
-@@ -61,7 +61,7 @@
+@@ -60,8 +60,8 @@
+ 
  dump_info() {
  	## Temp and fan speed info
- 	let "rpm = $2 * 30"
+-	let "rpm = $2 * 30"
 -	echo -e "Temp=$1[C-Deg]\nFan=${rpm}rpm\nFan Failures=$3" > $TMP/micro-evtd.status
++	rpm=$(($2*30))
 +	printf "Temp=$1[C-Deg]\nFan=${rpm}rpm\nFan Failures=$3\n" > $TMP/micro-evtd.status
  }
  

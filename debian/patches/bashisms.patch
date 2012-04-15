@@ -26,6 +26,19 @@
  			  done
  			  echo "Standby delayed by additional ${DELAY} minutes"
  			else
+@@ -397,9 +397,9 @@
+ 			if [ "$2" == "" ] ; then
+ 			  echo "#[microapl.hdd_set_power]"
+ 			  case `$MICRO 803B` in
+-			    0) echo -e "hdd12_power=off\nhdd34_power=off" ;;
+-			    1) echo -e "hdd12_power=on\nhdd34_power=off" ;;
+-			    2) echo -e "hdd12_power=off\nhdd34_power=on" ;;
++			    0) printf "hdd12_power=off\nhdd34_power=off\n" ;;
++			    1) printf "hdd12_power=on\nhdd34_power=off\n" ;;
++			    2) printf "hdd12_power=off\nhdd34_power=on\n" ;;
+ 			  esac
+ 			else
+ 			  TEMP=`printf "0x%02X" $2`
 --- a/files/micro-evtd.event
 +++ b/files/micro-evtd.event
 @@ -1,4 +1,4 @@
@@ -34,6 +47,15 @@
  # micro-evtd Event Script
  #
  # Sample Event Script written by Bob Perry (2007-2009)
+@@ -61,7 +61,7 @@
+ dump_info() {
+ 	## Temp and fan speed info
+ 	let "rpm = $2 * 30"
+-	echo -e "Temp=$1[C-Deg]\nFan=${rpm}rpm\nFan Failures=$3" > $TMP/micro-evtd.status
++	printf "Temp=$1[C-Deg]\nFan=${rpm}rpm\nFan Failures=$3\n" > $TMP/micro-evtd.status
+ }
+ 
+ stop() {
 @@ -158,7 +158,7 @@
  case "$1" in
  	4)	fan_fault $2 ;;

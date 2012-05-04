@@ -2,5 +2,5 @@
 
 if micro-evtd.command -t; then
 	micro-evtd.command start
-	micro-evtd.command startup
+	micro-evtd.command init
 fi

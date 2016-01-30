@@ -70,6 +70,12 @@ check_supported_device() {
 	# Check if current platform is supported.
 	device=$(sed -n '/Hardware/ {s/^.*: //;p}' /proc/cpuinfo)
 	case $device in
+		*"(Flattened Device Tree)")
+		device=$(cat /proc/device-tree/model)
+		;;
+	esac
+
+	case $device in
 		# Supported hardware, start the process using the wrapper
 		"Buffalo Linkstation Pro/Live" | "Buffalo/Revogear Kurobox Pro")
 		return 0
@@ -79,7 +85,7 @@ check_supported_device() {
 		log_failure_msg "micro-evtd error: device is not supported"
 		exit 1
 		;;
-esac
+	esac
 }
 
 start_server() {

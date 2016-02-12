@@ -23,6 +23,11 @@ micro_evtd_start() {
 # Test if device is supported
 machine=`sed -n '/Hardware/ {s/^Hardware\s*:\s//;p}' /proc/cpuinfo`
 case $machine in
+	*"(Flattened Device Tree)")
+	machine=$(cat /proc/device-tree/model)
+	;;
+esac
+case $machine in
 	"Buffalo Linkstation Pro/Live" | "Buffalo/Revogear Kurobox Pro")
 	# Success or continue
 	[ "$1" = "-t" ] && exit 0 || true ;;

@@ -1,8 +1,8 @@
-micro-evtd (3.4-3) UNRELEASED; urgency=medium
+micro-evtd (3.4-3) unstable; urgency=medium
 
   * Support device-tree enabled kernel
 
- -- Roger Shimizu <rogershimizu@gmail.com>  Sun, 31 Jan 2016 00:20:21 +0900
+ -- Roger Shimizu <rogershimizu@gmail.com>  Sat, 13 Feb 2016 16:06:51 +0900
 
 micro-evtd (3.4-2) unstable; urgency=low
 

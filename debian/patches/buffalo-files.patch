@@ -1,6 +1,16 @@
+From: Ryan Tandy <ryan@nardis.ca>
+Date: Wed, 1 Jun 2011 09:43:01 -0700
+Subject: buffalo-files
+
+---
+ files/micro-evtd.event | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/files/micro-evtd.event b/files/micro-evtd.event
+index 1510331..93fe5ad 100644
 --- a/files/micro-evtd.event
 +++ b/files/micro-evtd.event
-@@ -113,14 +113,10 @@
+@@ -113,14 +113,10 @@ button() {
  	    ## Micro IO
  	    case $1 in
  	      1)  stop ;;

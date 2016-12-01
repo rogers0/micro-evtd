@@ -1,6 +1,17 @@
+From: Ryan Tandy <ryan@nardis.ca>
+Date: Sat, 14 Apr 2012 23:07:38 -0700
+Subject: dont-copy-eventscript
+
+---
+ files/micro-evtd.event | 36 ++++++++----------------------------
+ src/micro-evtd.c       |  9 +++++----
+ 2 files changed, 13 insertions(+), 32 deletions(-)
+
+diff --git a/src/micro-evtd.c b/src/micro-evtd.c
+index d19e4a4..7f6471e 100644
 --- a/src/micro-evtd.c
 +++ b/src/micro-evtd.c
-@@ -606,13 +606,14 @@
+@@ -606,13 +606,14 @@ static int execute_command2(char cmd, char* cmdstring, char type, char cmd2, lon
  	size_t length;
  
  	// Create the command line
@@ -18,7 +29,7 @@
  		iDebugLevel,
  		(CALL_NO_WAIT == type ? '&' : ' '));
  //ToDo:	if ( length >= CMDLINE_LENGTH ) { error handling }
-@@ -1787,7 +1788,7 @@
+@@ -1787,7 +1788,7 @@ int main(int argc, char *argv[])
  	i_instandby--;
  
  	// Ensure that our script is copied to RAMDISK first
@@ -27,6 +38,8 @@
  
  	/* Create pid file */
  	execute_command2(CREATE_PID, ".", CALL_WAIT, 0, getpid());
+diff --git a/files/micro-evtd.event b/files/micro-evtd.event
+index 93fe5ad..bf58449 100644
 --- a/files/micro-evtd.event
 +++ b/files/micro-evtd.event
 @@ -4,7 +4,6 @@
@@ -68,7 +81,7 @@
  fi
  
  fan_fault() {
-@@ -51,16 +42,6 @@
+@@ -51,16 +42,6 @@ fan_fault() {
  	esac
  }
  
@@ -85,7 +98,7 @@
  over_heat() {
  	## Overheat detection and notification
  	if [ "$1" -eq 0 ]; then
-@@ -176,7 +157,6 @@
+@@ -176,7 +157,6 @@ look() {
  
  case "$1" in
  	4)	fan_fault $2 ;;

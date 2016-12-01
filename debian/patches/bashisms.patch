@@ -1,3 +1,14 @@
+From: Ryan Tandy <ryan@nardis.ca>
+Date: Sun, 15 Apr 2012 00:02:54 -0700
+Subject: bashisms
+
+---
+ files/micro-evtd.event |  8 ++++----
+ files/microapl         | 40 ++++++++++++++++++++--------------------
+ 2 files changed, 24 insertions(+), 24 deletions(-)
+
+diff --git a/files/microapl b/files/microapl
+index 6be140a..80ad001 100644
 --- a/files/microapl
 +++ b/files/microapl
 @@ -1,4 +1,4 @@
@@ -6,7 +17,7 @@
  #
  # microapl Linkstation/Kuro Micro-Controller querry script
  #
-@@ -76,15 +76,15 @@
+@@ -76,15 +76,15 @@ parse()
  			  ## Delay amount?
  			  if [ "$2" != "" ] ; then
  			    ## We only do 5 mins intervals
@@ -26,7 +37,7 @@
  			  done
  			  echo "Standby delayed by additional ${DELAY} minutes"
  			else
-@@ -110,7 +110,7 @@
+@@ -110,7 +110,7 @@ parse()
  		system_get_mode)
  			$MICRO 8034 ;;
  		system_set_watchdog)
@@ -35,7 +46,7 @@
  			  TEMP=`$MICRO 8035`
  			  TEMP=`expr 255 - ${TEMP}`
  			  echo "#[microapl.system_set_watchdog]"
-@@ -133,7 +133,7 @@
+@@ -133,7 +133,7 @@ parse()
  			echo "#[microapl.temp_get]"
  			echo "temp="${TEMP}"[C-degs]" ;;
  		fan_set_speed)
@@ -44,7 +55,7 @@
  			  echo "#[microapl.fan_set_speed]"
  			  echo -n "fan_set_speed="
  			  case `$MICRO 8033` in
-@@ -169,7 +169,7 @@
+@@ -169,7 +169,7 @@ parse()
  			  *)       $MICRO_q 013000 ;;
  			esac ;;
  		bz_set_freq)
@@ -53,7 +64,7 @@
  			  echo "#[microapl.bz_set_freq]"
  			  echo "bz_set_freq="`$MICRO 8053`
  			else
-@@ -184,7 +184,7 @@
+@@ -184,7 +184,7 @@ parse()
  			  $MICRO_q 0253${TEMP}${TEMP2}
  			fi ;;
  		bz_imhere)
@@ -62,7 +73,7 @@
  			  echo "please specify tempo and note(s)"
  			else
  			  TIME="$(($2 / 1000)).$(printf '%03d' $(($2 % 1000)))"
-@@ -210,7 +210,7 @@
+@@ -210,7 +210,7 @@ parse()
  			  parse led_set_cpu_mcon 0
  			fi ;;
  		bz_melody)
@@ -71,7 +82,7 @@
  			  echo "please specify tempo and note(s)"
  			else
  			  TIME="$(($2 / 1000)).$(printf '%03d' $(($2 % 1000)))"
-@@ -235,7 +235,7 @@
+@@ -235,7 +235,7 @@ parse()
  			esac
  			;;
  		led_set_bright)
@@ -80,7 +91,7 @@
  			  TEMP=`$MICRO 803A`
  			  TEMP="$((${TEMP} & 0xF))"
  			  case "${TEMP}" in
-@@ -292,7 +292,7 @@
+@@ -292,7 +292,7 @@ parse()
  			  led_set_blink | \
  			  led_set_brink)    COMMAND=52 ; SET="on";   UNSET="off" ;;
  			esac
@@ -89,7 +100,7 @@
  			  echo "#[microapl.$1]"
  			  TEMP=`$MICRO 80${COMMAND}`
  			  # extract first element
-@@ -318,7 +318,7 @@
+@@ -318,7 +318,7 @@ parse()
  			  $MICRO_q 02${COMMAND}${TEMP}00
  			fi ;;
  		led_set_code_error)
@@ -98,7 +109,7 @@
  			  TEMP=`$MICRO 8054`
  			  TEMP="${TEMP##* }"
  			  echo "#[microapl.led_set_code_error]"
-@@ -346,7 +346,7 @@
+@@ -346,7 +346,7 @@ parse()
  			  $MICRO_q 0254${TEMP}${ARG}
  			fi ;;
  		led_set_code_information)
@@ -107,7 +118,7 @@
  			  TEMP=`$MICRO 8054`
  			  TEMP="${TEMP%% *}"
  			  TEMP="$(printf '%02X' ${TEMP})"
-@@ -374,7 +374,7 @@
+@@ -374,7 +374,7 @@ parse()
  		mcon_get_status)
  			echo "#[microapl.mcon_get_status]"
  			echo -n "mcon_status="
@@ -116,7 +127,7 @@
  			  echo "on"
  			else
  			  echo "off"
-@@ -384,7 +384,7 @@
+@@ -384,7 +384,7 @@ parse()
  			echo "#[microapl.mcon_get_version]"
  			echo -n "mcon_version="
  			TEMP=`$MICRO 8083`
@@ -125,7 +136,7 @@
  			  echo "(error while getting version)"
  			else
  			  for i in ${TEMP} ; do
-@@ -394,12 +394,12 @@
+@@ -394,12 +394,12 @@ parse()
  			fi
  			;;
  		hdd_set_power)
@@ -142,6 +153,8 @@
  			  esac
  			else
  			  TEMP=`printf "0x%02X" $2`
+diff --git a/files/micro-evtd.event b/files/micro-evtd.event
+index bf58449..e21c96c 100644
 --- a/files/micro-evtd.event
 +++ b/files/micro-evtd.event
 @@ -1,4 +1,4 @@
@@ -150,7 +163,7 @@
  # micro-evtd Event Script
  #
  # Sample Event Script written by Bob Perry (2007-2009)
-@@ -60,8 +60,8 @@
+@@ -60,8 +60,8 @@ over_heat() {
  
  dump_info() {
  	## Temp and fan speed info
@@ -161,7 +174,7 @@
  }
  
  stop() {
-@@ -158,7 +158,7 @@
+@@ -158,7 +158,7 @@ look() {
  case "$1" in
  	4)	fan_fault $2 ;;
  	O)	over_heat $2 ;;

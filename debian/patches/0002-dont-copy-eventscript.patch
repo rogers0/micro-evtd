@@ -7,37 +7,6 @@ Subject: dont-copy-eventscript
  src/micro-evtd.c       |  9 +++++----
  2 files changed, 13 insertions(+), 32 deletions(-)
 
-diff --git a/src/micro-evtd.c b/src/micro-evtd.c
-index d19e4a4..7f6471e 100644
---- a/src/micro-evtd.c
-+++ b/src/micro-evtd.c
-@@ -606,13 +606,14 @@ static int execute_command2(char cmd, char* cmdstring, char type, char cmd2, lon
- 	size_t length;
- 
- 	// Create the command line
--	length = snprintf(strEventScript, CMDLINE_LENGTH, "%smicro-evtd.event %c %d %ld %s %s %d %c",
--		(CP_SCRIPT == cmd ? "" : strTmpPath),	// for copying call the event script via PATH
-+	length = snprintf(strEventScript, CMDLINE_LENGTH, "micro-evtd.event %c %d %ld %s %s %d %c",
-+		//(CP_SCRIPT == cmd ? "" : strTmpPath),	// for copying call the event script via PATH
- 		cmd,
- 		cmd2,
- 		cmd3,
- 		cmdstring,
--		(CP_SCRIPT == cmd ? strTmpPath : log_path),	// for copying log use tmp folder
-+		//(CP_SCRIPT == cmd ? strTmpPath : log_path),	// for copying log use tmp folder
-+		log_path,
- 		iDebugLevel,
- 		(CALL_NO_WAIT == type ? '&' : ' '));
- //ToDo:	if ( length >= CMDLINE_LENGTH ) { error handling }
-@@ -1787,7 +1788,7 @@ int main(int argc, char *argv[])
- 	i_instandby--;
- 
- 	// Ensure that our script is copied to RAMDISK first
--	execute_command(CP_SCRIPT, 0, CALL_WAIT);
-+	//execute_command(CP_SCRIPT, 0, CALL_WAIT);
- 
- 	/* Create pid file */
- 	execute_command2(CREATE_PID, ".", CALL_WAIT, 0, getpid());
 diff --git a/files/micro-evtd.event b/files/micro-evtd.event
 index 93fe5ad..bf58449 100644
 --- a/files/micro-evtd.event
@@ -106,3 +75,34 @@ index 93fe5ad..bf58449 100644
  	O)	over_heat $2 ;;
  	I)	dump_info $2 $3 ${4//_/ } ;;
  	B)	button $2 $4;;
+diff --git a/src/micro-evtd.c b/src/micro-evtd.c
+index d19e4a4..7f6471e 100644
+--- a/src/micro-evtd.c
++++ b/src/micro-evtd.c
+@@ -606,13 +606,14 @@ static int execute_command2(char cmd, char* cmdstring, char type, char cmd2, lon
+ 	size_t length;
+ 
+ 	// Create the command line
+-	length = snprintf(strEventScript, CMDLINE_LENGTH, "%smicro-evtd.event %c %d %ld %s %s %d %c",
+-		(CP_SCRIPT == cmd ? "" : strTmpPath),	// for copying call the event script via PATH
++	length = snprintf(strEventScript, CMDLINE_LENGTH, "micro-evtd.event %c %d %ld %s %s %d %c",
++		//(CP_SCRIPT == cmd ? "" : strTmpPath),	// for copying call the event script via PATH
+ 		cmd,
+ 		cmd2,
+ 		cmd3,
+ 		cmdstring,
+-		(CP_SCRIPT == cmd ? strTmpPath : log_path),	// for copying log use tmp folder
++		//(CP_SCRIPT == cmd ? strTmpPath : log_path),	// for copying log use tmp folder
++		log_path,
+ 		iDebugLevel,
+ 		(CALL_NO_WAIT == type ? '&' : ' '));
+ //ToDo:	if ( length >= CMDLINE_LENGTH ) { error handling }
+@@ -1787,7 +1788,7 @@ int main(int argc, char *argv[])
+ 	i_instandby--;
+ 
+ 	// Ensure that our script is copied to RAMDISK first
+-	execute_command(CP_SCRIPT, 0, CALL_WAIT);
++	//execute_command(CP_SCRIPT, 0, CALL_WAIT);
+ 
+ 	/* Create pid file */
+ 	execute_command2(CREATE_PID, ".", CALL_WAIT, 0, getpid());

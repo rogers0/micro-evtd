@@ -1,0 +1,52 @@
+From: Roger Shimizu <rogershimizu@gmail.com>
+Date: Thu, 1 Dec 2016 18:28:43 +0900
+Subject: fix typo in manpages
+
+Thanks to lintian
+---
+ files/micro-evtd.8      | 4 ++--
+ files/micro-evtd.conf.5 | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/files/micro-evtd.8 b/files/micro-evtd.8
+index 6186c58..7e8d363 100644
+--- a/files/micro-evtd.8
++++ b/files/micro-evtd.8
+@@ -41,7 +41,7 @@ timed event is reached, it will skip it for the next event.
+ .SH OPTIONS
+ .TP
+ \fB-s\fR
+-\fIstring1,string2,.. \fR Specifies a comma seperated hexadecimal command
++\fIstring1,string2,.. \fR Specifies a comma separated hexadecimal command
+ sequence which will be transmitted to the Micro.
+ .TP
+ \fB-c\fR
+@@ -100,4 +100,4 @@ micro-evtd.event
+ .TP
+ \fBmicroapl\fR(8), \fBmicro-evtd.conf\fR(5), \fBmicro-evtd.event\fR(8).
+ .SH AUTHOR
+-Bob Perry <lb-source@users.sourceforge.net>
+\ No newline at end of file
++Bob Perry <lb-source@users.sourceforge.net>
+diff --git a/files/micro-evtd.conf.5 b/files/micro-evtd.conf.5
+index 2de1e47..53838de 100644
+--- a/files/micro-evtd.conf.5
++++ b/files/micro-evtd.conf.5
+@@ -90,7 +90,7 @@ pressed.  If standby, then when the power button is hit and standby is enabled
+ the box will enter standby.  Otherwise, it will simply shutdown.
+ .TP 5
+ .IR [<day> | <day>-<day>]\ [ON=HH:MM | OFF=HH:MM | OFF>HH:MM]
+-This defines events for either a single day or group of days, '-' seperator.
++This defines events for either a single day or group of days, '-' separator.
+ Any number of
+ .B ON
+ and
+@@ -124,7 +124,7 @@ console users.  At shutdown, an event message is sent to the event script.
+ .RE
+ .TP 5
+ .IR DELAY_STANDBY\ [<name>][,<name>][.....]
+-This is a comma seperated list of process names that if present at standby
++This is a comma separated list of process names that if present at standby
+ will prevent the box from entering the standby state.  The list will be
+ polled every five minutes from the off event time.  If all the processes
+ are removed before the next event off time then the box will enter standby

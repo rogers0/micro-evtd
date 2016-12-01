@@ -8,6 +8,7 @@ micro-evtd (3.4-4) UNRELEASED; urgency=medium
   [ Roger Shimizu ]
   * debian/patches:
     - Refresh patches by git-buildpackage patch-queue (gbp pq)
+    - Fix typo in manpages. Thanks to lintian.
 
  -- Ryan Tandy <ryan@nardis.ca>  Wed, 30 Nov 2016 21:19:30 -0800
 

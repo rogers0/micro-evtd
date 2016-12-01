@@ -1,3 +1,11 @@
+micro-evtd (3.4-4) UNRELEASED; urgency=medium
+
+  * Bump to dh compat level 9 to get dpkg-buildflags support.
+  * Add -DNO_GPIO to CPPFLAGS to workaround /dev/mem no longer being
+    readable since CONFIG_STRICT_DEVMEM was enabled. (Closes: #845559)
+
+ -- Ryan Tandy <ryan@nardis.ca>  Wed, 30 Nov 2016 21:19:30 -0800
+
 micro-evtd (3.4-3) unstable; urgency=medium
 
   * Support device-tree enabled kernel

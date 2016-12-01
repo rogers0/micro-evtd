@@ -13,6 +13,7 @@ micro-evtd (3.4-4) UNRELEASED; urgency=medium
     - Add lsb-base (>= 3.0-6) as dependency of micro-evtd.
       Thanks to lintian.
     - Replace XC-Package-Type with Package-Type. Thanks to lintian.
+    - Add myself as uploader.
   * debian/rules:
     - Add security hardening.
 

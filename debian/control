@@ -22,7 +22,7 @@ Package: micro-evtd-udeb
 Architecture: arm armel
 Section: debian-installer
 Depends: ${shlibs:Depends}, ${misc:Depends}
-XC-Package-Type: udeb
+Package-Type: udeb
 Description: Linkstation Pro/Kurobox Pro special features support - udeb
  This package contains a stripped-down version of micro-evtd intended to
  allow debian-installer to run on the Linkstation Pro/Kurobox Pro family

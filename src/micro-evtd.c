@@ -1649,11 +1649,9 @@ int main(int argc, char *argv[])
 {
 	int iLen;
 	int i;
-	unsigned long ulMessage;
 	char *thisarg;
 	char iNotQuiet=1;
-	unsigned char* uiDemand = (unsigned char*)&ulMessage;
-	unsigned char uiMessage[10] = {0,};
+	unsigned char uiMessage[36] = {0,};
 	char* pos = NULL;
 	int iSetPriority = -4;
 
@@ -1731,11 +1729,9 @@ int main(int argc, char *argv[])
 			while (pos != 0) {
 				// Get command length
 				iLen = strlen(pos)/2;
-				// Get the HEX command
-				ulMessage = strtoul(pos, NULL, 16);
-				// Byte rotate please
+				// convert each set of two hex chars to corresponding byte
 				for (i=0;i<iLen;i++)
-					uiMessage[i] = uiDemand[iLen-i-1];
+					sscanf(pos+2*i, "%2hhx", &uiMessage[i]);
 				// Push it out and return result
 				i = writeUART(iLen, uiMessage);
 				if (iNotQuiet)

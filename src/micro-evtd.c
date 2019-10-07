@@ -1672,7 +1672,7 @@ int main(int argc, char *argv[])
 
 	// Generate unique key.  This will fail with stock so let it be.
 	if ((mutex = ftok(micro_conf, 'M')) == (key_t) -1) {
-	    printf("IPCS: Error, falling back to 'flock'\n");
+	    //printf("IPCS: Error, falling back to 'flock'\n");
 		mutex = 0;
 	}
 

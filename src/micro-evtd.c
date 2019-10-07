@@ -489,8 +489,16 @@ again:
 			if (0 == n) {
 				iReturn = (int)rbuf[2];
 				if (len-3 > 1) {
-					for (i=0;i<len-4;i++)
-						printf("%d ", rbuf[2+i]);
+					if ((rbuf[1] & 0x90) ||(rbuf[1] & 0xa0) || ((rbuf[1] >= 0x80) && (rbuf[1] <= 0x83)))
+					{
+						rbuf[len-1]=0;
+						printf("%s\n",rbuf + 2);
+					}
+					else
+					{
+						for (i=0;i<len-4;i++)
+							printf("%d ", rbuf[2+i]);
+					}
 					iReturn = (int)rbuf[2+len-4];
 				}
 

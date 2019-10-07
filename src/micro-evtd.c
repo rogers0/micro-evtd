@@ -417,8 +417,8 @@ static int writeUART(int n, unsigned char* output)
 	/* Handle ALL UART messages from a central point, reduce code
 	 * overhead */
 	unsigned char icksum = 0;
-	unsigned char rbuf[32];
-	unsigned char tbuf[32];
+	unsigned char rbuf[35];
+	unsigned char tbuf[35];
 	char retries = 2;
 	int i;
 	fd_set fReadFS;
@@ -455,6 +455,7 @@ static int writeUART(int n, unsigned char* output)
 		FD_ZERO(&fReadFS);
 		FD_SET(i_FileDescriptor, &fReadFS);
 
+		usleep(100000);
 		/* Wait for a max of 500ms for write response */
 		iResult = select(i_FileDescriptor + 1, &fReadFS, NULL, NULL, &tt_TimeoutPoll);
 		/* We did not time-out or error? No, then get data*/

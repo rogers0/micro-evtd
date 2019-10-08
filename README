@@ -1,3 +1,14 @@
+Fork of the original tool for interfacing with the on-board microcontroller on the early linkstations. The original is still included as part of the installation for the LS-GL Debian Installer.
+
+This version includes a few tweaks/fixes to allow the longer commands used to contol LCD displays to function properly. 
+
+Information about the messages that can be used can be found here:
+https://buffalonas.miraheze.org/wiki/Terastation_Microcontroller_Interface
+
+There is also a Python3 library for operating this interface:
+https://github.com/1000001101000/Python_buffalo_libmicon
+
+
 Forum thread:
 http://forum.buffalo.nas-central.org/viewtopic.php?f=7&t=4490
 

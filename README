@@ -16,3 +16,5 @@ micro-evtd -s 0003
 Set a message on the LCD screen:
 micro-evtd -s 20905465726173746174696f6e2061726d2044656269616e20496e7374616c6c657231
 
+I've tested it on armel/armhf and amd64 based Terastations 
+

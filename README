@@ -8,13 +8,11 @@ https://buffalonas.miraheze.org/wiki/Terastation_Microcontroller_Interface
 There is also a Python3 library for operating this interface:
 https://github.com/1000001101000/Python_buffalo_libmicon
 
+Usage Examples:
 
-Forum thread:
-http://forum.buffalo.nas-central.org/viewtopic.php?f=7&t=4490
+Send the "boot_end" signal which tells the mcu that the device booted successfully (and not to restart)
+micro-evtd -s 0003
 
-Sourceforge Project:
-https://sourceforge.net/projects/ppc-evtd/
+Set a message on the LCD screen:
+micro-evtd -s 20905465726173746174696f6e2061726d2044656269616e20496e7374616c6c657231
 
-Subversion repository:
-Browse: http://ppc-evtd.svn.sourceforge.net/viewvc/ppc-evtd/micro-evtd/trunk/
-Checkout/Export: https://ppc-evtd.svn.sourceforge.net/svnroot/ppc-evtd/micro-evtd/trunk/
